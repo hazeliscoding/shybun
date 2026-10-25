@@ -119,6 +119,7 @@ Not yet seen live: a mic plugged in or switched on while muted (Core-tested only
 - Mute when the screen locks.
 - Pick your own mute key, for when another app holds Win+Shift+Q.
 - Shiori's gone-quiet (mic), face-hidden (camera) and walked-in stickers, drawn in anime-pipeline with a new budget. Their presets are ready in her spec there. gone-quiet and face-hidden fit separate keys for the mic and the camera.
+- Shiori as the badge. She covers her mouth while the mic is muted and hides her face while the camera is off: a mute state worth showing in a ten-second clip, the way ThatPet shows an agent's. Her gone-quiet and face-hidden stickers above are the poses. Truth still rules: each pose shows what Windows reports, and unconfirmed must look nothing like muted. There's no reaction to talking while muted, since Shybun never opens an audio stream. Extra characters to buy would reopen the decision to build Shybun free.
 
 ## Not planned
 
