@@ -1,0 +1,21 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Shybun.Desktop.App"
+             Name="Shybun">
+  <!-- The Windows tray menu is drawn with Avalonia controls, so it needs a theme even with no window. -->
+  <Application.Styles>
+    <FluentTheme />
+  </Application.Styles>
+
+  <TrayIcon.Icons>
+    <TrayIcons>
+      <TrayIcon Icon="avares://Shybun/Assets/shybun.ico" ToolTipText="Shybun">
+        <TrayIcon.Menu>
+          <NativeMenu>
+            <NativeMenuItem Header="Quit Shybun" Click="OnQuit" />
+          </NativeMenu>
+        </TrayIcon.Menu>
+      </TrayIcon>
+    </TrayIcons>
+  </TrayIcon.Icons>
+</Application>

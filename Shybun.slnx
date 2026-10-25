@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Shybun.Core/Shybun.Core.csproj" />
+    <Project Path="src/Shybun.Desktop/Shybun.Desktop.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Shybun.Tests/Shybun.Tests.csproj" />
+  </Folder>
+</Solution>
