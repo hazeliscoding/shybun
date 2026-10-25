@@ -42,14 +42,16 @@ Claude's calls:
 - [x] Add the placeholder mark and its lockups to `docs/brand/`.
 - [ ] Search trademarks for Shybun: USPTO. *(owner)*
 - [ ] Pick the real logo and the bunny mascot in a claude.ai design project, and export `mark.svg` with a `-dark` variant. `scripts/make_lockup.py` rebuilds the lockups from it. *(owner)*
-- [ ] Scaffold `Shybun.Core`, `Shybun.Desktop` and `Shybun.Tests` on .NET 10 and Avalonia 12, with central package versions and warnings as errors.
-- [ ] A tray icon made from the mark, with Quit. No window yet. Load Avalonia's Fluent theme, or the tray menu opens empty (Staypaw's fix).
-- [ ] Design tokens: a spacing scale, a type scale, a palette with shades and a few shadow levels.
-- [ ] NativeAOT publish for `win-x64` with no trim or AOT warnings.
-- [ ] Guardrail tests, each with a positive control: `Shybun.Core` references neither Avalonia nor any Win32 interop, and no Shybun assembly uses `System.Net`.
-- [ ] CI on Windows: build, test, and secret scanning with the gitleaks release binary, checked against its published checksum and run with `--log-opts="--full-history HEAD"`.
+- [x] Scaffold `Shybun.Core`, `Shybun.Desktop` and `Shybun.Tests` on .NET 10 and Avalonia 12, with central package versions and warnings as errors.
+- [x] A tray icon made from the mark, with Quit. No window yet. Load Avalonia's Fluent theme, or the tray menu opens empty (Staypaw's fix).
+- [x] Design tokens: a spacing scale, a type scale, a palette with shades and a few shadow levels.
+- [x] NativeAOT publish for `win-x64` with no trim or AOT warnings.
+- [x] Guardrail tests, each with a positive control: `Shybun.Core` references neither Avalonia nor any Win32 interop (P/Invoke or COM), and no Shybun assembly uses `System.Net`. A deliberate `HttpClient` and a deliberate `DllImport` in Core failed them.
+- [x] CI on Windows: build, test, and secret scanning with the gitleaks release binary, checked against its published checksum and run with `--log-opts="--full-history HEAD"`.
 
 **Done when:** CI is green on `main`, and `dotnet publish -r win-x64` gives a native exe that starts in the tray.
+
+**Build items done 2026-10-24; the two owner items are still open.** [CI run 40157132474](https://github.com/hazeliscoding/shybun/actions/runs/40157132474) passed on `main`: build, tests, format, NativeAOT publish with warnings as errors, and the secret scan. A throwaway pull request that added an `HttpClient` to Core failed `No_Shybun_assembly_uses_the_network` in CI ([run 40157298279](https://github.com/hazeliscoding/shybun/actions/runs/40157298279)) and was closed without merging. The native exe is 17,563,136 bytes, and it started in the tray with no window, using a 39.6 MB working set after 5 s.
 
 ## M1: Mic and badge
 
