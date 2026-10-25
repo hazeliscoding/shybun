@@ -18,6 +18,7 @@ The owner's:
 - **The name is Shybun:** a shy bunny hides its face and goes quiet, as the camera and the mic do. Nothing called Shybun turned up on GitHub, winget or the Microsoft Store, and `shybun.com` is registered but serves nothing. Trademarks aren't searched yet. This gives up the runner-up, Hushkin.
 - **Linux is Not planned.** A Linux virtual camera means v4l2loopback, a kernel module, which is the kind of driver Shybun avoids on Windows. GNOME and KDE already have a mic-mute shortcut, and Wayland limits global keys and always-on-top windows. Reopen it if issues ask for it, or once PipeWire cameras work in the main browsers and meeting apps. This gives up Linux users. *(The Linux facts weren't checked this session.)*
 - **Planned without the usual questions,** at the owner's call. Claude stated the calls below; the owner can reopen any of them. This gives up a design the owner chose point by point.
+- **Shiori Burrows is the mascot, beside the placeholder mark.** She is a shy homebody who would rather stay unseen and unheard, drawn in the owner's anime-pipeline from the app's line: hiding her face is the camera, and going quiet is the mic. She appears in the README, in `docs/brand/shiori/` and in launch posts, and M2 plans the camera-off image from her hidden-and-quiet sticker. The bunny mark stays the logo and the app icon, and the real logo is still an owner item. Her art was drawn with an AI image model, and it is Apache-2.0 like the code; the README says both. Her dusty rose (`#C08182`) stays apart from the mark's blush until the real logo is picked, rather than retinting her or moving the brand. This gives up a single mark, a matched pink for now, and exclusive rights to her art: anyone may reuse or change it.
 
 Claude's calls:
 
@@ -34,14 +35,15 @@ Claude's calls:
 - **If the work laptop allows no admin,** the camera half falls back to Teams' local API for third-party devices. It's unverified, and on 2026-10-24 MuteDeck's docs said its Teams support "works without the old third-party API", so the API may be on its way out. M2 checks it before anything is built on it. This gives up a camera mute for apps other than Teams on that route.
 - **No network code, so no in-app updater.** Updates come through winget and GitHub Releases, as in Staypaw.
 - **Velopack Setup and a portable zip, signed through the Artifact Signing setup Staypaw uses.** Setup installs per user and never asks for admin; the camera's one-time admin step is Shybun's own, run when you turn the camera on. This gives up a single install that does everything.
-- **The brand is a placeholder:** a shy bunny with its eyes closed and its cheeks blushing, in `docs/brand/`. The wordmark is Fredoka SemiBold, as in Staypaw and Sweepling. The real logo and the mascot are M0 owner items.
+- **The brand is a placeholder:** a shy bunny with its eyes closed and its cheeks blushing, in `docs/brand/`. The wordmark is Fredoka SemiBold, as in Staypaw and Sweepling. The real logo and the mascot are M0 owner items. *(The mascot half is superseded: Shiori is the mascot, above.)*
 
 ## M0: Placeholder (as soon as possible)
 
 - [x] Add `LICENSE` (Apache-2.0), `README.md`, `ROADMAP.md` and `AGENTS.md`.
 - [x] Add the placeholder mark and its lockups to `docs/brand/`.
 - [ ] Search trademarks for Shybun: USPTO. *(owner)*
-- [ ] Pick the real logo and the bunny mascot in a claude.ai design project, and export `mark.svg` with a `-dark` variant. `scripts/make_lockup.py` rebuilds the lockups from it. *(owner)*
+- [x] The bunny mascot: Shiori Burrows, from anime-pipeline, in `docs/brand/shiori/` and the README.
+- [ ] Pick the real logo in a claude.ai design project, perhaps drawn from Shiori's bunny clip, and export `mark.svg` with a `-dark` variant. `scripts/make_lockup.py` rebuilds the lockups from it. *(owner)*
 - [x] Scaffold `Shybun.Core`, `Shybun.Desktop` and `Shybun.Tests` on .NET 10 and Avalonia 12, with central package versions and warnings as errors.
 - [x] A tray icon made from the mark, with Quit. No window yet. Load Avalonia's Fluent theme, or the tray menu opens empty (Staypaw's fix).
 - [x] Design tokens: a spacing scale, a type scale, a palette with shades and a few shadow levels.
@@ -76,6 +78,7 @@ Claude's calls:
 - [ ] Decide whether to release the real camera while muted, so its light goes off. eitchtee/VCM does, and documents webcams that fail to reopen afterwards.
 - [ ] Warn when an app holds the real camera instead of the Shybun camera. Check first whether the per-app `LastUsedTimeStart` and `LastUsedTimeStop` values under `ConsentStore\webcam` show that.
 - [ ] The badge shows the camera.
+- [ ] The camera-off image: Shiori's hidden-and-quiet sticker, waist-up and centred on a flat heather-grey 16:9 frame, composed in Shybun from `docs/brand/shiori/hidden-and-quiet.png`.
 
 **Done when:** a frame probe reading the Shybun camera gets real frames unmuted and only camera-off frames muted; a probe that opens the real camera directly makes the badge show the camera as unconfirmed; and Windows' Camera app shows the camera-off image while muted.
 
@@ -94,6 +97,7 @@ Claude's calls:
 - Separate keys for the mic and the camera, and push-to-talk. PowerToys' Video Conference Mute had both.
 - A camera-off image you pick.
 - Mute when the screen locks.
+- Shiori's gone-quiet (mic), face-hidden (camera) and walked-in stickers, drawn in anime-pipeline with a new budget. Their presets are ready in her spec there. gone-quiet and face-hidden fit separate keys for the mic and the camera.
 
 ## Not planned
 
