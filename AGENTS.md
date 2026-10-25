@@ -30,7 +30,7 @@ Shybun sits between people and their mic and camera. They run it only if they ca
 
 ## Brand
 
-- The logo is a placeholder bunny mark. The real logo and the mascot come from a claude.ai design project, an owner item. Don't redraw the mark here.
+- The logo is a placeholder bunny mark, and the app icon is the mark on a paper tile (`app-icon.svg`). The real logo and the mascot come from a claude.ai design project, an owner item. Don't redraw the mark here.
 - The wordmark is outlined Fredoka SemiBold. Use the lockup SVGs; don't re-typeset it with a web font. `scripts/make_lockup.py` rebuilds them from the mark, so rerun it when the mark changes.
 
 ## Dependencies
@@ -54,6 +54,9 @@ One meaning per term. Use these words in code, docs and commits.
 
 ## Commands
 
+- `dotnet build` builds everything. `dotnet test` runs the tests.
+- `dotnet publish src/Shybun.Desktop -c Release -r win-x64` builds the native exe. With Visual Studio 18, put `%ProgramFiles(x86)%\Microsoft Visual Studio\Installer` on `PATH` first: its `VsDevCmd.bat` calls `vswhere.exe` without a path, and the error text breaks the NativeAOT link step ("'vswhere.exe' is not recognized").
+- `dotnet run scripts/make-icons.cs` regenerates `docs/brand/shybun.ico` and `app-icon-256.png` from `app-icon.svg`.
 - `uv run --no-project --with fonttools --with uharfbuzz python -I scripts/make_lockup.py <Fredoka-SemiBold.ttf> docs/brand` rebuilds the lockups. Its header says where to get the font.
 
 ## Working style
