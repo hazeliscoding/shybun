@@ -13,11 +13,12 @@ These are the working rules for agents in this repo. Shybun is a Windows tray ap
 Shybun sits between people and their mic and camera. They run it only if they can trust it, so never break these, not even in dev tooling that ships.
 
 - **No code in other processes, except the Shybun camera.** No DLL injection, no `CreateRemoteThread`, no hook DLLs. Work laptops ban injection. The Shybun camera's media source is the one exception, and Windows loads it, not Shybun: into the Frame Server, the camera monitor and every app that opens the camera. So it passes frames through and swaps in the camera-off image, and does nothing else: it writes no files and opens no network. A bug there breaks the camera for every app that loads it.
-- **No networking code.** No `HttpClient`, sockets, updater or telemetry, and no package that brings them in. A test will fail on any `System.Net` use in Shybun's assemblies. A tool between you and your camera that talks to the network can't be trusted.
+- **No network call except the update check.** Velopack's check of GitHub Releases, made by the tray app, is the only one. No `HttpClient`, sockets or telemetry in Shybun's own code, no other package that brings network code in, and nothing network in the Shybun camera. A test will fail on any `System.Net` use in Shybun's assemblies. A tool between you and your camera that talks to the network can't be trusted, so its one call fetches its own updates, and a tick in the tray menu turns that off.
 - **Never store or send a frame or a sound.** The mic half only flips Windows' mute switch and never opens an audio stream, except in explicit tests that read silence. The camera passes frames through in memory. No snapshots, no debug dumps of frames, no log line with pixel or sample data. A mute tool that records is spyware.
 - **Run unelevated.** Don't set `requireAdministrator` in the manifest. The one exception is the camera's one-time install step: a separate elevated process that copies the media source and registers it, and nothing more. The mic half must work with no admin at all, because work laptops often grant none.
 - **The badge never claims a mute it can't confirm.** It shows what Windows reports, read back after each change. A device Shybun can't read shows as unconfirmed, never as muted. A false "muted" is worse than no badge: you'd talk freely on a live mic.
 - **Never move focus.** The key goes through `RegisterHotKey`, and the badge never activates. Pressing mute mid-sentence must not pull you out of the app you're in.
+- **Never restart into an update mid-call.** The key does nothing while Shybun restarts, so a downloaded update waits until no app is using a mic or a camera.
 - **Don't change Windows' camera or mic privacy settings** (`CapabilityAccessManager\ConsentStore`) without the owner's OK, even in a test, and restore them afterwards. A test that forgets leaves the camera blocked for every app.
 - **Code ported from VCamNetSample keeps its MIT notice** in `THIRD-PARTY-NOTICES.md`. The license requires it.
 
@@ -39,7 +40,7 @@ Shybun sits between people and their mic and camera. They run it only if they ca
 - **A special-purpose library** (a parser, an installer framework): add it yourself, with its reason in the commit message.
 - **A general-purpose helper:** only after checking that nothing in the project already does the job.
 - **A framework:** never without asking the owner.
-- **Anything that brings in network code:** never. See the trust contract.
+- **Anything that brings in network code:** never, except Velopack for the update check. See the trust contract.
 
 ## Glossary
 

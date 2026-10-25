@@ -35,7 +35,7 @@ Planned for 1.0:
 - **A badge you can trust.** A small always-on-top badge shows the mic's and the camera's state as Windows reports it, read back after every change. When Shybun can't confirm a device is quiet, the badge says so instead of guessing.
 - **New mics join muted.** A headset plugged in while you're muted is muted the moment it appears.
 - **The Shybun camera.** Pick it once in each meeting app. It passes your camera through, and sends a camera-off image while you're muted. It needs Windows 11.
-- **Installs signed,** through winget.
+- **Installs signed, through winget, and updates itself.** A tick in the tray menu turns updates off.
 
 The mic half mutes the device in Windows, so a meeting app's own mute icon doesn't change. Trust the badge, not the app.
 
@@ -44,7 +44,7 @@ The mic half mutes the device in Windows, so a meeting app's own mute icon doesn
 Shybun sits between you and your mic and camera, so it has to be easy to trust.
 
 - **Nothing injected.** Shybun never pushes code into another app. The Shybun camera is the one part other processes load, and Windows does the loading, as it does for any camera's software. It passes frames through and swaps in the camera-off image, nothing else.
-- **No network.** There is no networking code, no updater and no telemetry.
+- **No network, except the update check.** Shybun asks GitHub Releases for a newer version of itself, and that's all. There's no telemetry, and the Shybun camera never touches the network. A tick in the tray menu turns the check off.
 - **Nothing recorded.** No frame or sound is ever stored or sent. The mic half never listens at all: it only flips Windows' mute switch.
 - **Runs unelevated.** The mic half never needs admin. The Shybun camera needs it once, at install, because Windows only accepts a camera source that's registered for the whole machine.
 - **Open source,** so you can check all of this instead of trusting it.
@@ -62,6 +62,7 @@ flowchart LR
     app --> badge["Badge: what Windows reports"]
     mics -- "sound, or silence" --> meet["Meeting apps"]
     cam -- "frames, or the camera-off image" --> meet
+    app -. "update check" .-> releases["GitHub Releases"]
 ```
 
 ## Alternatives

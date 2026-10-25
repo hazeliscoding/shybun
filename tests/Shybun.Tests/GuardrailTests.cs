@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 
 namespace Shybun.Tests;
 
-/// <summary>Structural rules from AGENTS.md: the core has no UI and no Win32, and nothing uses the network.</summary>
+/// <summary>Structural rules from AGENTS.md: the core has no UI and no Win32, and Shybun's own code never uses the network; the update check belongs to Velopack.</summary>
 public class GuardrailTests
 {
     private const BindingFlags Declared =
