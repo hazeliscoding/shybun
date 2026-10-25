@@ -5,6 +5,8 @@
   </picture>
 </h1>
 
+<img align="right" width="160" src="docs/brand/shiori/hidden-and-quiet.png" alt="Shiori, a shy homebody with long black hair and a bunny hair clip, covers her eyes with one hand and her mouth with the other and peeks out with one eye, as Shybun mutes the camera and the mic together.">
+
 **One key mutes your mic and camera, in every app.** A badge shows you're muted, and it only says so when Windows confirms it.
 
 Windows has no camera key, and its own mic key (Win+Alt+K) works only in apps that support it. PowerToys' Video Conference Mute did both, until [v0.88.0 removed it](https://github.com/microsoft/PowerToys/pull/36772) in January 2025. People still keep PowerToys at 0.87.1 to hold on to it ([PowerToys #38604](https://github.com/microsoft/PowerToys/issues/38604)).
@@ -24,6 +26,8 @@ Windows has no camera key, and its own mic key (Win+Alt+K) works only in apps th
 The Meet row comes from a comment on [PowerToys #38604](https://github.com/microsoft/PowerToys/issues/38604): browser meetings can't hear a shortcut while they're in the background.
 
 ## What it does
+
+<img align="right" width="150" src="docs/brand/shiori/not-sure.png" alt="Shiori touches her bunny hair clip with a wavy, unsure mouth and a sweat drop, as the badge says so when it can't confirm a device is quiet.">
 
 Planned for 1.0:
 
@@ -80,4 +84,4 @@ Issues are welcome. Planning lives in [ROADMAP.md](ROADMAP.md).
 
 ## License
 
-[Apache-2.0](LICENSE).
+[Apache-2.0](LICENSE). Shiori, the shy homebody in this README, was drawn with an AI image model and is Apache-2.0 like the code.
