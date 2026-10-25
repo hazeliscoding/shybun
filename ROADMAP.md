@@ -19,6 +19,7 @@ The owner's:
 - **Linux is Not planned.** A Linux virtual camera means v4l2loopback, a kernel module, which is the kind of driver Shybun avoids on Windows. GNOME and KDE already have a mic-mute shortcut, and Wayland limits global keys and always-on-top windows. Reopen it if issues ask for it, or once PipeWire cameras work in the main browsers and meeting apps. This gives up Linux users. *(The Linux facts weren't checked this session.)*
 - **Planned without the usual questions,** at the owner's call. Claude stated the calls below; the owner can reopen any of them. This gives up a design the owner chose point by point.
 - **Shiori Burrows is the mascot, beside the placeholder mark.** She is a shy homebody who would rather stay unseen and unheard, drawn in the owner's anime-pipeline from the app's line: hiding her face is the camera, and going quiet is the mic. She appears in the README, in `docs/brand/shiori/` and in launch posts, and M2 plans the camera-off image from her hidden-and-quiet sticker. The bunny mark stays the logo and the app icon, and the real logo is still an owner item. Her art was drawn with an AI image model, and it is Apache-2.0 like the code; the README says both. Her dusty rose (`#C08182`) stays apart from the mark's blush until the real logo is picked, rather than retinting her or moving the brand. This gives up a single mark, a matched pink for now, and exclusive rights to her art: anyone may reuse or change it.
+- **Shybun updates itself, as Sweepling does (2026-10-25).** Velopack checks GitHub Releases a minute after start and every 4 hours, downloads in the background, and restarts into the update. An "Update automatically" tick in the tray menu turns it off, and a build from source never checks. The check is the only network call: the tray app makes it, the Shybun camera never does, and offline it fails quietly. *Claude's call within it:* a downloaded update waits until no app is using a mic or a camera, because the key does nothing while Shybun restarts. This gives up "no network at all", about 6 MB of exe (Velopack's HTTP stack grew Sweepling's from 19.9 to 25.6 MB), and updates for the Shybun camera without admin: it sits in `%ProgramFiles%\Shybun`, so M3 settles how a release that changes it gets installed.
 
 Claude's calls:
 
@@ -33,7 +34,7 @@ Claude's calls:
   - admin once at install. Windows loads the camera's media source in the Frame Server, the camera monitor and every app that opens it, so it must be registered for the whole machine (HKLM) and sit in a folder those services can read, never under the user's profile ([VCamNetSample](https://github.com/smourier/VCamNetSample)). A bug in it breaks the camera for every app that loads it.
 - **Not Windows' camera privacy switch.** In a test on 2026-10-24 (Windows 11 25H2, the owner's built-in webcam), setting "Let desktop apps access your camera" to Deny didn't stop a running stream: Media Foundation kept 15 fps at normal brightness for 8 s, and DirectShow lost no frames. A stream opened while it's Deny starts with no error and gets no frames. Windows checks the setting only when a stream starts, so it can't be a mute. This gives up the one camera mute that needs no install.
 - **If the work laptop allows no admin,** the camera half falls back to Teams' local API for third-party devices. It's unverified, and on 2026-10-24 MuteDeck's docs said its Teams support "works without the old third-party API", so the API may be on its way out. M2 checks it before anything is built on it. This gives up a camera mute for apps other than Teams on that route.
-- **No network code, so no in-app updater.** Updates come through winget and GitHub Releases, as in Staypaw.
+- **No network code, so no in-app updater.** Updates come through winget and GitHub Releases, as in Staypaw. *(Superseded on 2026-10-25: Shybun updates itself, above.)*
 - **Velopack Setup and a portable zip, signed through the Artifact Signing setup Staypaw uses.** Setup installs per user and never asks for admin; the camera's one-time admin step is Shybun's own, run when you turn the camera on. This gives up a single install that does everything.
 - **The brand is a placeholder:** a shy bunny with its eyes closed and its cheeks blushing, in `docs/brand/`. The wordmark is Fredoka SemiBold, as in Staypaw and Sweepling. The real logo and the mascot are M0 owner items. *(The mascot half is superseded: Shiori is the mascot, above.)*
 
@@ -85,12 +86,14 @@ Claude's calls:
 ## M3: 1.0
 
 - [ ] A Velopack per-user Setup and a portable zip, built by a release workflow.
+- [ ] Shybun updates itself through Velopack, as Sweepling does: the first check a minute after start, then every 4 hours, with an "Update automatically" tick in the tray menu and no check in a build from source. A downloaded update waits until no app is using a mic or a camera; check first that Windows' `ConsentStore` shows that (see M2).
+- [ ] Decide how a release that changes the Shybun camera reaches `%ProgramFiles%\Shybun`, which needs admin.
 - [ ] Sign releases with Artifact Signing through OIDC, from a `release` environment that only `v*` tags can deploy to, as in Staypaw.
 - [ ] Scan the published exe and the media source with Microsoft Defender.
 - [ ] Submit a winget manifest.
 - [ ] A screenshot and a short demo in the README.
 
-**Done when:** `winget install hazeliscoding.Shybun` installs a signed build that starts in the tray, and turning the camera on installs the Shybun camera.
+**Done when:** `winget install hazeliscoding.Shybun` installs a signed build that starts in the tray, turning the camera on installs the Shybun camera, and an installed release updates itself to a later test release with no Shybun process left behind.
 
 ## Later
 
@@ -105,7 +108,7 @@ Claude's calls:
 - **macOS.** Both halves are built on Windows APIs. MuteDeck covers macOS.
 - **Any kernel or camera driver,** DirectShow or AVStream. Work laptops block them, and PowerToys removed its own over install trouble and broken webcams.
 - **Pressing meeting apps' own buttons for you,** as MuteDeck does. It breaks whenever an app moves a button, and MuteDeck already does it well.
-- **Network code:** an updater, telemetry or crash reporting.
+- **Network code besides the update check:** telemetry or crash reporting.
 - **Recording or previewing sound or video.** See the trust contract.
 
 ## How we'll know it works
