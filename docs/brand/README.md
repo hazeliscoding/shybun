@@ -5,5 +5,6 @@ The logo is a placeholder: a shy bunny with its eyes closed and its cheeks blush
 - `mark.svg` / `mark-dark.svg`: the bunny mark, for light and dark backgrounds.
 - `lockup.svg` / `lockup-dark.svg`: the mark plus the "shybun" wordmark, as in the README's title.
 - The wordmark is Fredoka SemiBold (SIL Open Font License), lowercase, with -0.01em letter spacing, converted to paths because GitHub can't load web fonts inside SVGs. It's the same face as Staypaw's and Sweepling's. Use the SVGs; don't re-typeset it. `scripts/make_lockup.py` rebuilds both lockups from the font and the mark, and its header says how. Rerun it whenever the mark changes.
+- `app-icon.svg` is the mark on a paper tile, with thicker lines for small sizes. It's the source of `shybun.ico` and `app-icon-256.png`, which `scripts/make-icons.cs` renders.
 
 Logo colours: ink `#1d1a16` and blush `#c4567a` on light backgrounds, paper `#f2ede2` and blush `#f08fb0` on dark ones.
