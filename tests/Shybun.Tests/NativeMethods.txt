@@ -1,0 +1,8 @@
+GetForegroundWindow
+IAudioCaptureClient
+IAudioClient
+IAudioEndpointVolume
+IMMDeviceEnumerator
+MMDeviceEnumerator
+SendInput
+WAVEFORMATEXTENSIBLE
