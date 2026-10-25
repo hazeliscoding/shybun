@@ -21,6 +21,9 @@ The owner's:
 - **Shiori Burrows is the mascot, beside the placeholder mark.** She is a shy homebody who would rather stay unseen and unheard, drawn in the owner's anime-pipeline from the app's line: hiding her face is the camera, and going quiet is the mic. She appears in the README, in `docs/brand/shiori/` and in launch posts, and M2 plans the camera-off image from her hidden-and-quiet sticker. The bunny mark stays the logo and the app icon, and the real logo is still an owner item. Her art was drawn with an AI image model, and it is Apache-2.0 like the code; the README says both. Her dusty rose (`#C08182`) stays apart from the mark's blush until the real logo is picked, rather than retinting her or moving the brand. This gives up a single mark, a matched pink for now, and exclusive rights to her art: anyone may reuse or change it.
 - **Shybun updates itself, as Sweepling does (2026-10-25).** Velopack checks GitHub Releases a minute after start and every 4 hours, downloads in the background, and restarts into the update. An "Update automatically" tick in the tray menu turns it off, and a build from source never checks. The check is the only network call: the tray app makes it, the Shybun camera never does, and offline it fails quietly. *Claude's call within it:* a downloaded update waits until no app is using a mic or a camera, because the key does nothing while Shybun restarts. This gives up "no network at all", about 6 MB of exe (Velopack's HTTP stack grew Sweepling's from 19.9 to 25.6 MB), and updates for the Shybun camera without admin: it sits in `%ProgramFiles%\Shybun`, so M3 settles how a release that changes it gets installed.
 - **No portable copy, as in Sweepling (2026-10-25).** Velopack's per-user Setup is the only download. A copy that can't update itself would miss fixes. This gives up a zip for people who won't run an installer.
+- **The mute key is Win+Shift+Q (2026-10-25).** It was PowerToys Video Conference Mute's default for "both", so people who kept 0.87.1 already know it, and it's in neither Microsoft's Windows shortcut list nor Teams' (Teams uses Ctrl+Shift+M and Ctrl+Shift+O). If another app holds it, the tray menu says so. This gives up picking your own key, for now (Later).
+- **A mic unmuted behind Shybun's back shows live (2026-10-25).** The badge and the tray say a mic is live, and Shybun never mutes it again on its own; the next press mutes everything. A laptop's mic key or Windows' Sound settings may unmute on purpose, and fighting them would trap you. This gives up protection from an accidental unmute.
+- **The badge shows while muted, and whenever a mic is live during Mute or can't be read (2026-10-25).** It hides when everything is simply live, so no badge means live. If Shybun dies, the badge goes too, and you assume you're live, which is the safe guess; the tray icon tells the two apart. It sits in the primary screen's top right, as PowerToys' toolbar did by default. This gives up a badge that also confirms you're live.
 
 Claude's calls:
 
@@ -38,6 +41,11 @@ Claude's calls:
 - **No network code, so no in-app updater.** Updates come through winget and GitHub Releases, as in Staypaw. *(Superseded on 2026-10-25: Shybun updates itself, above.)*
 - **Velopack Setup and a portable zip, signed through the Artifact Signing setup Staypaw uses.** *(The portable zip is superseded on 2026-10-25: no portable copy, above.)* Setup installs per user and never asks for admin; the camera's one-time admin step is Shybun's own, run when you turn the camera on. This gives up a single install that does everything.
 - **The brand is a placeholder:** a shy bunny with its eyes closed and its cheeks blushing, in `docs/brand/`. The wordmark is Fredoka SemiBold, as in Staypaw and Sweepling. The real logo and the mascot are M0 owner items. *(The mascot half is superseded: Shiori is the mascot, above.)*
+- **The key toggles what the badge shows (2026-10-25).** When it shows Muted, a press unmutes every mic; otherwise, a mic live during Mute or one Shybun can't read included, a press mutes every mic. A press always goes toward quiet first. This gives up a plain on/off toggle that ignores what Windows reports.
+- **Shybun never changes a mic at start or at quit (2026-10-25).** It starts from what Windows reports, so it starts muted only if every mic already is, and quitting leaves every mic as it was. This gives up unmuting for you when Shybun closes.
+- **CsWin32 runs as a build task (2026-10-25),** so its COM interfaces use .NET's COM source generators, which NativeAOT supports, with runtime marshaling turned off. Windows' device and mute callbacks are `[GeneratedComClass]` classes; one reached the native build in the live test. This gives up nothing found yet; Staypaw and Sweepling use CsWin32's older, marshaled mode.
+- **Silence means below one step of 16-bit audio, 1/32768 (2026-10-25).** A muted mic measured 2e-10, float residue from Windows' audio processing. The live test asks for sound from at least one live mic, not every one: the owner's Logitech PRO X Wireless headset read live but sent pure silence, because it was switched off or muted on the headset. This gives up proving sound on every mic.
+- **The tray's state icons are the app icon with a dot (2026-10-25):** blush while muted, ink when a mic is live during Mute or can't be read. `scripts/make-icons.cs` draws them, so the mark itself is unchanged.
 
 ## M0: Placeholder (as soon as possible)
 
@@ -59,16 +67,24 @@ Claude's calls:
 
 ## M1: Mic and badge
 
-- [ ] A global key through `RegisterHotKey`, which never moves focus. Pick a default that clashes with neither Windows (Win+Alt+K) nor Teams.
-- [ ] Mute and unmute every capture device through `IAudioEndpointVolume::SetMute`, with no admin.
-- [ ] Mute a mic that appears while muted, as it arrives.
-- [ ] Read each mic's state back after every change and on Windows' own notifications. The badge and the tray show what was read, never what Shybun asked for.
-- [ ] Decide what happens when something unmutes a mic behind Shybun's back: mute it again, or show it live.
-- [ ] The badge: always on top, never takes focus, and clicks pass through it.
-- [ ] The tray icon shows the state too.
-- [ ] Log every mute and unmute with the state read back from each mic, to `%LOCALAPPDATA%\Shybun\mute-log.csv`, for the dogfooding count. Times and states only, never sound.
+- [x] A global key through `RegisterHotKey`, which never moves focus. Pick a default that clashes with neither Windows (Win+Alt+K) nor Teams. *(Win+Shift+Q, see Decisions.)*
+- [x] Mute and unmute every capture device through `IAudioEndpointVolume::SetMute`, with no admin.
+- [x] Mute a mic that appears while muted, as it arrives.
+- [x] Read each mic's state back after every change and on Windows' own notifications. The badge and the tray show what was read, never what Shybun asked for.
+- [x] Decide what happens when something unmutes a mic behind Shybun's back: mute it again, or show it live. *(Show it live, see Decisions.)*
+- [x] The badge: always on top, never takes focus, and clicks pass through it.
+- [x] The tray icon shows the state too.
+- [x] Log every mute and unmute with the state read back from each mic, to `%LOCALAPPDATA%\Shybun\mute-log.csv`, for the dogfooding count. Times and states only, never sound.
 
 **Done when:** tests on `Shybun.Core` cover a mic that appears while muted and a mic unmuted behind Shybun's back; an explicit test opens a capture stream on each mic and gets only silence while muted, and sound otherwise; and pressing the key from another app leaves that app in front.
+
+**Done 2026-10-25.** `MuteTests` cover a mic that appears while muted and one unmuted behind Shybun's back. On the owner's laptop, with two mics (the built-in Realtek one and a Logitech PRO X Wireless headset), the explicit `LiveTests` passed against the native exe:
+- Win+Shift+Q, pressed with `SendInput`, muted both mics and left the app in front where it was, and pressed again it unmuted both.
+- While muted, a second of each mic peaked at 2e-10 at most. Unmuted, the built-in mic gave sound; the headset was switched off or muted on the headset itself.
+- Unmuting one mic behind Shybun's back reached Shybun as Windows' notification. The mic stayed live, and the log gained a `windows,on,2,1,1,0` row.
+- The badge showed "Muted" in the top right and hid on unmute.
+
+Not yet seen live: a mic plugged in or switched on while muted (Core-tested only), a click passing through the badge, and the tray icons in the real tray. The native exe is 17,804,800 bytes, up from 17,563,136.
 
 ## M2: Camera
 
@@ -101,6 +117,7 @@ Claude's calls:
 - Separate keys for the mic and the camera, and push-to-talk. PowerToys' Video Conference Mute had both.
 - A camera-off image you pick.
 - Mute when the screen locks.
+- Pick your own mute key, for when another app holds Win+Shift+Q.
 - Shiori's gone-quiet (mic), face-hidden (camera) and walked-in stickers, drawn in anime-pipeline with a new budget. Their presets are ready in her spec there. gone-quiet and face-hidden fit separate keys for the mic and the camera.
 
 ## Not planned
