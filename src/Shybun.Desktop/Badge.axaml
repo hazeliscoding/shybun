@@ -1,0 +1,61 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Shybun.Desktop.Badge"
+        Title="Shybun badge"
+        WindowDecorations="None"
+        Topmost="True"
+        ShowActivated="False"
+        ShowInTaskbar="False"
+        CanResize="False"
+        SizeToContent="WidthAndHeight"
+        Background="Transparent"
+        TransparencyLevelHint="Transparent">
+  <!-- Every look lives in a style: a value set on the element itself would beat the state classes. -->
+  <Window.Styles>
+    <Style Selector="Border#Pill">
+      <Setter Property="Background" Value="{DynamicResource Surface1}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Border1}" />
+    </Style>
+    <Style Selector="Ellipse#Dot">
+      <Setter Property="Fill" Value="{DynamicResource Accent}" />
+    </Style>
+    <Style Selector="TextBlock#Label">
+      <Setter Property="Foreground" Value="{DynamicResource Text1}" />
+    </Style>
+
+    <!-- A live mic during Mute is the one state that must be loud. AccentText keeps the label readable. -->
+    <Style Selector="Border#Pill.live">
+      <Setter Property="Background" Value="{DynamicResource AccentText}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource AccentText}" />
+    </Style>
+    <Style Selector="Border#Pill.live Ellipse#Dot">
+      <Setter Property="Fill" Value="{DynamicResource Surface1}" />
+    </Style>
+    <Style Selector="Border#Pill.live TextBlock#Label">
+      <Setter Property="Foreground" Value="{DynamicResource Surface1}" />
+    </Style>
+
+    <Style Selector="Border#Pill.unconfirmed Ellipse#Dot">
+      <Setter Property="Fill" Value="Transparent" />
+      <Setter Property="Stroke" Value="{DynamicResource Text1}" />
+      <Setter Property="StrokeThickness" Value="2" />
+    </Style>
+  </Window.Styles>
+
+  <!-- The margin leaves room for the shadow inside the window. -->
+  <Border x:Name="Pill"
+          Margin="8"
+          Padding="12,6"
+          CornerRadius="{StaticResource RadiusMedium}"
+          BorderThickness="1"
+          BoxShadow="{StaticResource Shadow2}">
+    <StackPanel Orientation="Horizontal" Spacing="8">
+      <Ellipse x:Name="Dot" Width="10" Height="10" VerticalAlignment="Center" />
+      <TextBlock x:Name="Label"
+                 VerticalAlignment="Center"
+                 FontFamily="{StaticResource SansFont}"
+                 FontSize="{StaticResource FontBody}"
+                 FontWeight="SemiBold" />
+    </StackPanel>
+  </Border>
+</Window>
