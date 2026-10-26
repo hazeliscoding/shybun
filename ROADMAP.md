@@ -25,6 +25,7 @@ The owner's:
 - **A mic unmuted behind Shybun's back shows live (2026-10-25).** The badge and the tray say a mic is live, and Shybun never mutes it again on its own; the next press mutes everything. A laptop's mic key or Windows' Sound settings may unmute on purpose, and fighting them would trap you. This gives up protection from an accidental unmute.
 - **The badge shows while muted, and whenever a mic is live during Mute or can't be read (2026-10-25).** It hides when everything is simply live, so no badge means live. If Shybun dies, the badge goes too, and you assume you're live, which is the safe guess; the tray icon tells the two apart. It sits in the primary screen's top right, as PowerToys' toolbar did by default. This gives up a badge that also confirms you're live.
 - **The bunny mark is the logo (2026-10-26).** The placeholder stays, with its lockups and the app icon, so there's no design project for a new one. Shiori's dusty rose stays apart from the mark's blush. The trademark search moves to Later. This gives up a logo drawn for the brand, perhaps from Shiori's bunny clip, and a pink that matches hers.
+- **The camera half covers laptops with and without admin (2026-10-26).** The owner can approve an admin prompt at work, and work uses Teams, so M2 builds the Shybun camera. Without admin, the badge shows when an app has the real camera on and says Shybun can't turn it off, and the key leaves the camera alone. Teams' local API is dropped: Elgato pulled its Teams plugin in November 2025 over "Microsoft's decision to discontinue the API", a plugin author reports it was retired on 30 June 2026, and it's a socket, which the trust contract forbids. This gives up a camera mute without admin.
 
 Claude's calls:
 
@@ -38,7 +39,7 @@ Claude's calls:
   - picking "Shybun camera" once in each app;
   - admin once at install. Windows loads the camera's media source in the Frame Server, the camera monitor and every app that opens it, so it must be registered for the whole machine (HKLM) and sit in a folder those services can read, never under the user's profile ([VCamNetSample](https://github.com/smourier/VCamNetSample)). A bug in it breaks the camera for every app that loads it.
 - **Not Windows' camera privacy switch.** In a test on 2026-10-24 (Windows 11 25H2, the owner's built-in webcam), setting "Let desktop apps access your camera" to Deny didn't stop a running stream: Media Foundation kept 15 fps at normal brightness for 8 s, and DirectShow lost no frames. A stream opened while it's Deny starts with no error and gets no frames. Windows checks the setting only when a stream starts, so it can't be a mute. This gives up the one camera mute that needs no install.
-- **If the work laptop allows no admin,** the camera half falls back to Teams' local API for third-party devices. It's unverified, and on 2026-10-24 MuteDeck's docs said its Teams support "works without the old third-party API", so the API may be on its way out. M2 checks it before anything is built on it. This gives up a camera mute for apps other than Teams on that route.
+- **If the work laptop allows no admin,** the camera half falls back to Teams' local API for third-party devices. It's unverified, and on 2026-10-24 MuteDeck's docs said its Teams support "works without the old third-party API", so the API may be on its way out. M2 checks it before anything is built on it. This gives up a camera mute for apps other than Teams on that route. *(Superseded on 2026-10-26: without admin, the badge shows the camera honestly instead, above.)*
 - **No network code, so no in-app updater.** Updates come through winget and GitHub Releases, as in Staypaw. *(Superseded on 2026-10-25: Shybun updates itself, above.)*
 - **Velopack Setup and a portable zip, signed through the Artifact Signing setup Staypaw uses.** *(The portable zip is superseded on 2026-10-25: no portable copy, above.)* Setup installs per user and never asks for admin; the camera's one-time admin step is Shybun's own, run when you turn the camera on. This gives up a single install that does everything.
 - **The brand is a placeholder:** a shy bunny with its eyes closed and its cheeks blushing, in `docs/brand/`. The wordmark is Fredoka SemiBold, as in Staypaw and Sweepling. The real logo and the mascot are M0 owner items. *(Superseded: Shiori is the mascot, and the placeholder mark is the logo, both above.)*
@@ -88,17 +89,18 @@ Not yet seen live: a mic plugged in or switched on while muted (Core-tested only
 
 ## M2: Camera
 
-- [ ] Settle the route: can the owner's work laptop install as admin once, and which meeting apps does work use? *(owner)* With admin, build the virtual camera. Without it, first check that Teams' local API still exists.
+- [x] Settle the route: can the owner's work laptop install as admin once, and which meeting apps does work use? *(owner: yes, and Teams. Build the Shybun camera, and show the camera honestly without admin; see Decisions.)*
 - [ ] `Shybun.Camera`: a NativeAOT media source that passes the real camera's frames through and sends the camera-off image while muted. Start from VCamNetSample (MIT), keeping its notice in `THIRD-PARTY-NOTICES.md`.
 - [ ] Hand the mute state to the media source across processes: it runs in the Frame Server and the apps that open it, never in Shybun.
 - [ ] Give the Shybun camera the real camera while it streams (`IMFVirtualCamera::AddDeviceSourceInfo`).
 - [ ] A one-time elevated step copies the media source to `%ProgramFiles%\Shybun` and registers it. The tray app stays unelevated, and uninstalling undoes the step.
 - [ ] Decide whether to release the real camera while muted, so its light goes off. eitchtee/VCM does, and documents webcams that fail to reopen afterwards.
 - [ ] Warn when an app holds the real camera instead of the Shybun camera. Check first whether the per-app `LastUsedTimeStart` and `LastUsedTimeStop` values under `ConsentStore\webcam` show that.
+- [ ] Without the Shybun camera installed, the badge shows when an app has the real camera on and says Shybun can't turn it off. The key leaves the camera alone.
 - [ ] The badge shows the camera.
 - [ ] The camera-off image: Shiori's hidden-and-quiet sticker, waist-up and centred on a flat heather-grey 16:9 frame, composed in Shybun from `docs/brand/shiori/hidden-and-quiet.png`.
 
-**Done when:** a frame probe reading the Shybun camera gets real frames unmuted and only camera-off frames muted; a probe that opens the real camera directly makes the badge show the camera as unconfirmed; and Windows' Camera app shows the camera-off image while muted.
+**Done when:** a frame probe reading the Shybun camera gets real frames unmuted and only camera-off frames muted; a probe that opens the real camera directly makes the badge show the camera as unconfirmed, or, without the Shybun camera installed, say Shybun can't turn it off; and Windows' Camera app shows the camera-off image while muted.
 
 ## M3: 1.0
 

@@ -34,7 +34,7 @@ Planned for 1.0:
 - **One key for both.** It mutes every mic Windows has and the Shybun camera, from any app, without moving focus.
 - **A badge you can trust.** A small always-on-top badge shows the mic's and the camera's state as Windows reports it, read back after every change. When Shybun can't confirm a device is quiet, the badge says so instead of guessing.
 - **New mics join muted.** A headset plugged in while you're muted is muted the moment it appears.
-- **The Shybun camera.** Pick it once in each meeting app. It passes your camera through, and sends a camera-off image while you're muted. It needs Windows 11.
+- **The Shybun camera.** Pick it once in each meeting app. It passes your camera through, and sends a camera-off image while you're muted. It needs Windows 11, and admin once to install. Without admin, Shybun can't turn the camera off, but the badge still shows when an app has it on.
 - **Installs signed, through winget, and updates itself.** A tick in the tray menu turns updates off.
 
 The mic half mutes the device in Windows, so a meeting app's own mute icon doesn't change. Trust the badge, not the app.
