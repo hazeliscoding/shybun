@@ -15,8 +15,8 @@ namespace Shybun.Tests;
 
 /// <summary>
 /// M2's checks on the real camera. They open the webcam, so run them only when nobody is on a call. Each read keeps
-/// only a frame count and an average brightness, never a frame. Install the Shybun camera's media source first:
-/// scripts/install-camera.ps1, elevated.
+/// only a frame count and an average brightness, never a frame. The Frame Server checks need the Shybun camera
+/// installed from the tray menu.
 /// </summary>
 public class CameraLiveTests
 {
