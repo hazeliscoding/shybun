@@ -210,8 +210,20 @@ internal sealed unsafe partial class MediaStream : IMFMediaStream2
             buffer.SetCurrentLength((uint)frame.Length);
 
             PInvoke.MFCreateSample(out var sample).ThrowOnFailure();
-            // The attributes carry the token that matches the frame to the app's request.
-            real.CopyAllItems(sample).ThrowOnFailure();
+            // Only the token that matches the frame to the app's request, and the stream flags. The real frame's
+            // other attributes describe the room: capture metadata can carry face regions, a histogram and exposure.
+            foreach (var kept in (ReadOnlySpan<Guid>)[PInvoke.MFSampleExtension_Token, PInvoke.MFSampleExtension_CleanPoint, PInvoke.MFSampleExtension_Discontinuity])
+            {
+                var key = kept;
+                PROPVARIANT item = default;
+                if (real.GetItem(&key, (PROPVARIANT_unmanaged*)&item).Succeeded)
+                {
+                    sample.SetItem(&key, in item).ThrowOnFailure();
+                }
+
+                PInvoke.PropVariantClear(ref item);
+            }
+
             real.GetSampleTime(out var time);
             sample.SetSampleTime(time);
             real.GetSampleDuration(out var duration);

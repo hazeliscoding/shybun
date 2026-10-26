@@ -56,6 +56,9 @@ MFCreateAttributes
 MFCreateEventQueue
 MFCreateMemoryBuffer
 MFCreateSample
+MFSampleExtension_CleanPoint
+MFSampleExtension_Discontinuity
+MFSampleExtension_Token
 MFT_TRANSFORM_CLSID_Attribute
 MFUnlockWorkQueue
 MFVideoFormat_MJPG
