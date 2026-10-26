@@ -1,6 +1,6 @@
 # Shybun brand
 
-The logo is a placeholder: a shy bunny with its eyes closed and its cheeks blushing, as Shybun closes the camera and quiets the mic. The real logo is an owner item in M0 of the [roadmap](../../ROADMAP.md), to be picked in a claude.ai design project. The mascot is [Shiori](#shiori).
+The logo is a shy bunny with its eyes closed and its cheeks blushing, as Shybun closes the camera and quiets the mic. It began as a placeholder, and the owner kept it (see the [roadmap](../../ROADMAP.md)). The mascot is [Shiori](#shiori).
 
 - `mark.svg` / `mark-dark.svg`: the bunny mark, for light and dark backgrounds.
 - `lockup.svg` / `lockup-dark.svg`: the mark plus the "shybun" wordmark, as in the README's title.
@@ -24,7 +24,7 @@ Shiori Burrows is a shy homebody who would rather stay unseen and unheard, and b
 | `shiori/bunny-pajamas.png` | Bunny pajamas, hood up | Off hours |
 
 - The PNGs are 512 px square with transparent backgrounds. The stickers have a white die-cut border; `base.png` and `bunny-pajamas.png` have none.
-- Her colours, sampled from `shiori/base.png`: hair `#38363A`, skin `#F2D7CE`, tee `#F0E7DC`, joggers `#BCB8B9`, and dusty rose `#C08182` on her clip, the tee's bands, the drawstrings and the slides. Her rose is not the logo's blush, on purpose: the two stay apart until the real logo is picked. None of them is a text colour.
+- Her colours, sampled from `shiori/base.png`: hair `#38363A`, skin `#F2D7CE`, tee `#F0E7DC`, joggers `#BCB8B9`, and dusty rose `#C08182` on her clip, the tee's bands, the drawstrings and the slides. Her rose is not the logo's blush, on purpose: she is never recoloured, and the logo stays as it is. None of them is a text colour.
 - Her art is AI-generated with OpenAI's gpt-image-2.5-flare, from a written character spec, and like the code it is Apache-2.0. Don't edit or redraw her here; new stickers come from the same spec, so the set stays consistent.
 
 <br clear="right">

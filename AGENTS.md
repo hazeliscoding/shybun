@@ -31,7 +31,7 @@ Shybun sits between people and their mic and camera. They run it only if they ca
 
 ## Brand
 
-- The logo is a placeholder bunny mark, and the app icon is the mark on a paper tile (`app-icon.svg`). The real logo comes from a claude.ai design project, an owner item. Don't redraw the mark here.
+- The logo is the bunny mark, and the app icon is the mark on a paper tile (`app-icon.svg`). It began as a placeholder, and the owner kept it as the logo, so don't redraw it here.
 - Shiori, in `docs/brand/shiori/`, is the mascot. Never edit, recolour or redraw her here: her images come from one written spec and one reference image in the owner's anime-pipeline, and an image changed by hand drifts from the rest of the set. New stickers are drawn there.
 - The wordmark is outlined Fredoka SemiBold. Use the lockup SVGs; don't re-typeset it with a web font. `scripts/make_lockup.py` rebuilds them from the mark, so rerun it when the mark changes.
 
