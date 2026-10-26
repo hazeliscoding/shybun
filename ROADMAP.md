@@ -100,7 +100,7 @@ Not yet seen live: a mic plugged in or switched on while muted (Core-tested only
 - [ ] The badge shows the camera.
 - [ ] The camera-off image: Shiori's hidden-and-quiet sticker, waist-up and centred on a flat heather-grey 16:9 frame, composed in Shybun from `docs/brand/shiori/hidden-and-quiet.png`.
 
-**Done when:** a frame probe reading the Shybun camera gets real frames unmuted and only camera-off frames muted; a probe that opens the real camera directly makes the badge show the camera as unconfirmed, or, without the Shybun camera installed, say Shybun can't turn it off; and Windows' Camera app shows the camera-off image while muted.
+**Done when:** a frame probe reading the Shybun camera gets real frames unmuted and only camera-off frames muted; a probe that opens the real camera directly makes the badge show the camera as unconfirmed, or, without the Shybun camera installed, say Shybun can't turn it off; and Windows' Camera app, Teams, Discord and Google Meet in a browser each list the Shybun camera and show the camera-off image while muted.
 
 ## M3: 1.0
 
