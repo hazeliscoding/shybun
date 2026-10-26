@@ -20,6 +20,8 @@ internal sealed class MuteController : IDisposable
     private readonly Mute _mute;
     private readonly Badge _badge = new();
     private readonly HotKey _key;
+    private readonly NativeMenuItem _cameraItem = new() { IsEnabled = false };
+    private readonly ShybunCamera _camera;
 
     public MuteController(TrayIcon tray)
     {
@@ -30,12 +32,15 @@ internal sealed class MuteController : IDisposable
         _mics.Removed += OnRemoved;
         _mics.Changed += OnChanged;
         _key = new HotKey(Press);
+        _camera = new ShybunCamera(_mute.On, status => Dispatcher.UIThread.Post(() => _cameraItem.Header = status));
+        _cameraItem.Header = _camera.Status;
         _tray.Menu?.Items.Insert(0, new NativeMenuItem
         {
             Header = _key.Registered ? $"Mute key: {HotKey.Name}" : $"{HotKey.Name} is taken by another app",
             IsEnabled = false,
         });
-        _tray.Menu?.Items.Insert(1, new NativeMenuItemSeparator());
+        _tray.Menu?.Items.Insert(1, _cameraItem);
+        _tray.Menu?.Items.Insert(2, new NativeMenuItemSeparator());
         Show();
     }
 
@@ -43,6 +48,7 @@ internal sealed class MuteController : IDisposable
     {
         _key.Dispose();
         _mics.Dispose();
+        _camera.Dispose();
         _badge.Close();
     }
 
@@ -52,6 +58,11 @@ internal sealed class MuteController : IDisposable
         foreach (var id in _mute.Mics.Keys.ToList())
         {
             _mute.Read(id, _mics.Set(id, muted));
+        }
+
+        if (!_camera.WriteMute(_mute.On) && _camera.Exists)
+        {
+            _cameraItem.Header = "Shybun couldn't reach the Shybun camera";
         }
 
         Log(MuteCause.Key);
