@@ -26,7 +26,11 @@ MFEnumDeviceSources
 MFMediaType_Video
 MFShutdown
 MFStartup
+MFVideoFormat_H264
+MFVideoFormat_MJPG
 MFVideoFormat_NV12
+MFVideoFormat_RGB32
+MFVideoFormat_YUY2
 MMDeviceEnumerator
 SendInput
 WAVEFORMATEXTENSIBLE

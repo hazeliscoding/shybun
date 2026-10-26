@@ -16,4 +16,9 @@
     <PackageReference Include="Microsoft.Windows.CsWin32" PrivateAssets="all" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- CameraOff draws the camera-off image from this sticker. -->
+    <EmbeddedResource Include="..\..\docs\brand\shiori\hidden-and-quiet.png" LogicalName="hidden-and-quiet.png" />
+  </ItemGroup>
+
 </Project>

@@ -3,6 +3,7 @@ using Windows.Win32;
 using Windows.Win32.Foundation;
 using Windows.Win32.Media.MediaFoundation;
 using Windows.Win32.System.Com.StructuredStorage;
+using Windows.Win32.System.Variant;
 using EventType = Windows.Win32.Media.MediaFoundation.__MIDL___MIDL_itf_mfobjects_0000_0013_0001;
 
 namespace Shybun.Camera;
@@ -19,13 +20,15 @@ internal sealed unsafe partial class MediaStream : IMFMediaStream2
     private readonly IMFStreamDescriptor _descriptor;
     private readonly IMFMediaEventQueue _events;
     private readonly AsyncCallback _onDeviceEvent;
+    private readonly MuteSwitch _mute;
     private IMFMediaStream? _device;
     private bool _shutdown;
 
-    public MediaStream(MediaSource source, IMFStreamDescriptor descriptor, uint queue)
+    public MediaStream(MediaSource source, IMFStreamDescriptor descriptor, uint queue, MuteSwitch mute)
     {
         _source = source;
         _descriptor = descriptor;
+        _mute = mute;
         descriptor.GetStreamIdentifier(out var id);
         Id = id;
         PInvoke.MFCreateEventQueue(out _events).ThrowOnFailure();
@@ -161,11 +164,19 @@ internal sealed unsafe partial class MediaStream : IMFMediaStream2
             if (failure.Succeeded)
             {
                 e.GetType(out var type);
-                _events.QueueEvent(e);
                 // After an error the real camera sends nothing more.
                 if ((EventType)type != EventType.MEError)
                 {
                     device.BeginGetEvent(_onDeviceEvent, device);
+                }
+
+                if ((EventType)type == EventType.MEMediaSample && _mute.IsOn)
+                {
+                    SendCameraOff(e, device);
+                }
+                else
+                {
+                    _events.QueueEvent(e);
                 }
             }
         }
@@ -176,5 +187,59 @@ internal sealed unsafe partial class MediaStream : IMFMediaStream2
             PROPVARIANT empty = default;
             _source.QueueEvent((uint)EventType.MEError, null, failure, in empty);
         }
+    }
+
+    // The real frame stops here, in the Frame Server, and never reaches the app. When the camera-off image can't be
+    // made, nothing is sent in its place.
+    private void SendCameraOff(IMFMediaEvent e, IMFMediaStream device)
+    {
+        e.GetValue(out var value);
+        try
+        {
+            if (value.vt != VARENUM.VT_UNKNOWN || value.punkVal is null || Frame(device) is not { } frame)
+            {
+                return;
+            }
+
+            var real = Com.Get<IMFSample>(value.punkVal);
+            PInvoke.MFCreateMemoryBuffer((uint)frame.Length, out var buffer).ThrowOnFailure();
+            byte* data;
+            buffer.Lock(&data, null, null);
+            frame.CopyTo(new Span<byte>(data, frame.Length));
+            buffer.Unlock();
+            buffer.SetCurrentLength((uint)frame.Length);
+
+            PInvoke.MFCreateSample(out var sample).ThrowOnFailure();
+            // The attributes carry the token that matches the frame to the app's request.
+            real.CopyAllItems(sample).ThrowOnFailure();
+            real.GetSampleTime(out var time);
+            sample.SetSampleTime(time);
+            real.GetSampleDuration(out var duration);
+            sample.SetSampleDuration(duration);
+            sample.AddBuffer(buffer);
+            _events.QueueEventParamUnk((uint)EventType.MEMediaSample, null, HRESULT.S_OK, sample).ThrowOnFailure();
+        }
+        catch (Exception)
+        {
+        }
+        finally
+        {
+            PInvoke.PropVariantClear(ref value);
+        }
+    }
+
+    // The camera-off image in the format the real camera is streaming.
+    private static byte[]? Frame(IMFMediaStream device)
+    {
+        device.GetStreamDescriptor(out var descriptor).ThrowOnFailure();
+        descriptor.GetMediaTypeHandler(out var handler);
+        handler.GetCurrentMediaType(out var type);
+        Guid key = PInvoke.MF_MT_SUBTYPE, subtype;
+        type.GetGUID(&key, &subtype).ThrowOnFailure();
+        key = PInvoke.MF_MT_FRAME_SIZE;
+        type.GetUINT64(&key, out var size).ThrowOnFailure();
+        key = PInvoke.MF_MT_DEFAULT_STRIDE;
+        var stride = type.GetUINT32(&key, out var defaultStride).Succeeded ? (int)defaultStride : 0;
+        return CameraOff.Frame(subtype, (int)(size >> 32), (int)(size & 0xFFFFFFFF), stride);
     }
 }

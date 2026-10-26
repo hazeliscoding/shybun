@@ -1,4 +1,5 @@
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using Windows.Win32;
 using Windows.Win32.Foundation;
@@ -43,7 +44,7 @@ internal sealed unsafe partial class MediaSource : IMFMediaSourceEx, IMFGetServi
         // The source and its streams share one serial queue, so their callbacks never run at the same time.
         PInvoke.MFAllocateSerialWorkQueue(PInvoke.MFASYNC_CALLBACK_QUEUE_MULTITHREADED, out _queue).ThrowOnFailure();
         _onDeviceEvent = new AsyncCallback(_queue, OnDeviceEvent);
-        _streams = CreateStreams();
+        _streams = CreateStreams(new MuteSwitch(UserSid(activateAttributes)));
         _device.BeginGetEvent(_onDeviceEvent, _device).ThrowOnFailure();
     }
 
@@ -335,7 +336,8 @@ internal sealed unsafe partial class MediaSource : IMFMediaSourceEx, IMFGetServi
         }
     }
 
-    private MediaStream[] CreateStreams()
+    // The streams share one switch: their callbacks run one at a time on the source's queue.
+    private MediaStream[] CreateStreams(MuteSwitch mute)
     {
         _device.CreatePresentationDescriptor(out var presentation).ThrowOnFailure();
         presentation.GetStreamDescriptorCount(out var count);
@@ -343,10 +345,30 @@ internal sealed unsafe partial class MediaSource : IMFMediaSourceEx, IMFGetServi
         for (uint i = 0; i < count; i++)
         {
             presentation.GetStreamDescriptorByIndex(i, out _, out var descriptor);
-            streams[i] = new MediaStream(this, descriptor, _queue);
+            streams[i] = new MediaStream(this, descriptor, _queue, mute);
         }
 
         return streams;
+    }
+
+    // Whoever made the virtual camera names the user it belongs to; without that, Mute can't be read.
+    private static string? UserSid(IMFAttributes attributes)
+    {
+        var key = MuteSwitch.UserAttribute;
+        PWSTR sid;
+        if (attributes.GetAllocatedString(&key, &sid, out _).Failed)
+        {
+            return null;
+        }
+
+        try
+        {
+            return sid.ToString();
+        }
+        finally
+        {
+            Marshal.FreeCoTaskMem((nint)sid.Value);
+        }
     }
 
     // The real camera's attributes, then the virtual camera's on top.
