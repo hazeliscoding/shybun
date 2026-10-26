@@ -88,7 +88,7 @@ public class LiveTests
     }
 
     // SHYBUN_EXE points the tests at a published native build; otherwise they run the one built beside them.
-    private static Process StartShybun()
+    internal static Process StartShybun()
     {
         var exe = Environment.GetEnvironmentVariable("SHYBUN_EXE") ?? Path.Combine(AppContext.BaseDirectory, "Shybun.exe");
         var shybun = Process.Start(exe)!;
@@ -96,7 +96,7 @@ public class LiveTests
         return shybun;
     }
 
-    private static void Unmute(List<(string Id, IMMDevice Device, IAudioEndpointVolume Volume)> mics)
+    internal static void Unmute(List<(string Id, IMMDevice Device, IAudioEndpointVolume Volume)> mics)
     {
         foreach (var mic in mics)
         {
@@ -104,7 +104,7 @@ public class LiveTests
         }
     }
 
-    private static unsafe List<(string Id, IMMDevice Device, IAudioEndpointVolume Volume)> Mics()
+    internal static unsafe List<(string Id, IMMDevice Device, IAudioEndpointVolume Volume)> Mics()
     {
         var enumerator = MMDeviceEnumerator.CreateInstance<IMMDeviceEnumerator>();
         enumerator.EnumAudioEndpoints(EDataFlow.eCapture, DEVICE_STATE.DEVICE_STATE_ACTIVE, out var devices);
@@ -123,13 +123,13 @@ public class LiveTests
         return mics;
     }
 
-    private static bool IsMuted(IAudioEndpointVolume volume)
+    internal static bool IsMuted(IAudioEndpointVolume volume)
     {
         volume.GetMute(out BOOL muted);
         return muted;
     }
 
-    private static unsafe void PressMuteKey()
+    internal static unsafe void PressMuteKey()
     {
         static INPUT Key(VIRTUAL_KEY key, bool up) => new()
         {

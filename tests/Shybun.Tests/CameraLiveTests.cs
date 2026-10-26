@@ -51,6 +51,46 @@ public class CameraLiveTests
         CheckLiveThenMuted(mute, () => ActivateHere(real.Activate), direct);
     });
 
+    // The whole chain: Shybun makes its camera, and the key switches it with the mics. It presses Win+Shift+Q and
+    // mutes every mic, so keep off the keyboard and off calls. The Shybun camera stays afterwards, as it would for
+    // anyone who installed it.
+    [Fact(Explicit = true)]
+    public void The_key_switches_the_Shybun_camera_to_the_camera_off_image_and_back() => Run(() =>
+    {
+        var mics = LiveTests.Mics();
+        Assert.All(mics, mic => Assert.False(LiveTests.IsMuted(mic.Volume), $"Unmute {mic.Id} before running this test."));
+        var direct = ReadDirectly(RealCamera());
+
+        using var shybun = LiveTests.StartShybun();
+        try
+        {
+            // Windows' name for the camera Shybun calls "Shybun camera".
+            var camera = WaitForCamera("Shybun camera (Windows Virtual Camera)");
+            var live = Within(() => Watch(Open(camera.Link)));
+            Report("Shybun camera, live", live);
+            Assert.InRange(live.Brightness, direct.Brightness * 0.7, direct.Brightness * 1.3);
+
+            LiveTests.PressMuteKey();
+            Thread.Sleep(1000);
+            var muted = Within(() => Watch(Open(camera.Link)));
+            var cameraOff = AverageLuma(CameraOff.Frame(PInvoke.MFVideoFormat_NV12, muted.Width, muted.Height, 0)!, muted.Width * muted.Height);
+            Report($"Shybun camera after the key (the camera-off image is {cameraOff:F0})", muted);
+            Assert.InRange(muted.Brightness, cameraOff - 6, cameraOff + 6);
+            Assert.All(mics, mic => Assert.True(LiveTests.IsMuted(mic.Volume), $"{mic.Id} isn't muted"));
+
+            LiveTests.PressMuteKey();
+            Thread.Sleep(1000);
+            var back = Within(() => Watch(Open(camera.Link)));
+            Report("Shybun camera after the second press", back);
+            Assert.InRange(back.Brightness, direct.Brightness * 0.7, direct.Brightness * 1.3);
+        }
+        finally
+        {
+            shybun.Kill();
+            LiveTests.Unmute(mics);
+        }
+    });
+
     // Leaves Mute as the test found it: a Shybun running here keeps its own, and a key the test made goes.
     private static void Run(Action test)
     {
