@@ -20,6 +20,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Shybun.Core\Shybun.Core.csproj" />
+    <!-- Not referenced: this only makes a publish's restore cover the camera for the same runtime. -->
+    <ProjectReference Include="..\Shybun.Camera\Shybun.Camera.csproj" ReferenceOutputAssembly="false" />
   </ItemGroup>
 
   <ItemGroup>
@@ -34,5 +36,12 @@
     <AvaloniaResource Include="..\..\docs\brand\shybun-muted.ico" Link="Assets\shybun-muted.ico" />
     <AvaloniaResource Include="..\..\docs\brand\shybun-alert.ico" Link="Assets\shybun-alert.ico" />
   </ItemGroup>
+
+  <!-- The camera's media source ships beside Shybun.exe, where the install step copies it from. -->
+  <Target Name="PublishCamera" AfterTargets="Publish">
+    <MSBuild Projects="..\Shybun.Camera\Shybun.Camera.csproj"
+             Targets="Publish"
+             Properties="Configuration=$(Configuration);RuntimeIdentifier=$(RuntimeIdentifier);PublishDir=$([MSBuild]::NormalizeDirectory('$(MSBuildProjectDirectory)', '$(PublishDir)'))" />
+  </Target>
 
 </Project>
