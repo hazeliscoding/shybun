@@ -6,6 +6,7 @@ IClassFactory
 IMFActivate
 IMFMediaBuffer
 IMFSample
+IMFSensorActivitiesReportCallback
 IMFSourceReader
 IMFVirtualCamera
 IMMDeviceEnumerator
@@ -24,6 +25,7 @@ MFCreateAttributes
 MFCreateCollection
 MFCreateDeviceSource
 MFCreateMediaType
+MFCreateSensorActivityMonitor
 MFCreateSourceReaderFromMediaSource
 MFCreateVirtualCamera
 MFEnumDeviceSources

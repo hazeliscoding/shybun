@@ -1,7 +1,9 @@
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
+using System.Runtime.Versioning;
 using System.Security.AccessControl;
 using System.Security.Principal;
 using Microsoft.Win32;
@@ -111,6 +113,86 @@ public class CameraLiveTests
         Assert.Equal(File.ReadAllBytes(shipped), File.ReadAllBytes(installed));
         using var server = Registry.LocalMachine.OpenSubKey($@"Software\Classes\CLSID\{{{CameraContract.ClassId}}}\InprocServer32");
         Assert.Equal(installed, server?.GetValue(null));
+    }
+
+    // The signal for an app on the real camera: Windows' sensor activity monitor credits a camera's use to the app, and
+    // an app on the Shybun camera streams the webcam too. So an app streaming the webcam but not the Shybun camera
+    // holds it directly. Apps that only hold a camera open, and processes that have exited, stay listed, so only
+    // streaming counts. It notes this test's own process and nobody else's.
+    [Fact(Explicit = true)]
+    [SupportedOSPlatform("windows10.0.15063")]
+    public void An_app_on_the_Shybun_camera_streams_both_cameras_and_one_on_the_webcam_only_the_webcam() => Run(() =>
+    {
+        const string Shybun = "Shybun camera (Windows Virtual Camera)";
+        var real = RealCamera();
+        var streaming = new ConcurrentDictionary<(string Phase, string Camera), bool>();
+        var phase = "idle";
+        var callback = new ActivityCallback(report =>
+        {
+            foreach (var (camera, ids) in Streaming(report))
+            {
+                var kind = camera == real.Name ? "webcam" : camera == Shybun ? "Shybun camera" : null;
+                if (kind is not null && ids.Contains((uint)Environment.ProcessId))
+                {
+                    streaming[(phase, kind)] = true;
+                }
+            }
+        });
+        PInvoke.MFCreateSensorActivityMonitor(callback, out var monitor).ThrowOnFailure();
+        monitor.Start();
+        try
+        {
+            phase = "webcam opened";
+            Within(() => Watch(Open(real.Link)));
+            Thread.Sleep(1500);
+            phase = "Shybun camera opened";
+            Within(() => Watch(Open(WaitForCamera(Shybun).Link)));
+            Thread.Sleep(1500);
+        }
+        finally
+        {
+            monitor.Stop();
+        }
+
+        foreach (var ((when, camera), _) in streaming.OrderBy(entry => entry.Key))
+        {
+            TestContext.Current.SendDiagnosticMessage($"{when}: this test streamed the {camera}");
+        }
+
+        Assert.True(streaming.ContainsKey(("webcam opened", "webcam")));
+        Assert.False(streaming.ContainsKey(("webcam opened", "Shybun camera")));
+        Assert.True(streaming.ContainsKey(("Shybun camera opened", "Shybun camera")));
+        Assert.True(streaming.ContainsKey(("Shybun camera opened", "webcam")));
+    });
+
+    // Each camera's name, and the processes streaming it.
+    [SupportedOSPlatform("windows10.0.15063")]
+    private static unsafe List<(string Camera, HashSet<uint> Streaming)> Streaming(IMFSensorActivitiesReport report)
+    {
+        var cameras = new List<(string, HashSet<uint>)>();
+        var name = stackalloc char[256];
+        report.GetCount(out var devices);
+        for (uint d = 0; d < devices; d++)
+        {
+            report.GetActivityReport(d, out var device);
+            device.GetFriendlyName(name, 256, out var written);
+            device.GetProcessCount(out var processes);
+            var ids = new HashSet<uint>();
+            for (uint p = 0; p < processes; p++)
+            {
+                device.GetProcessActivity(p, out var activity);
+                activity.GetStreamingState(out var on);
+                if (on)
+                {
+                    activity.GetProcessId(out var id);
+                    ids.Add(id);
+                }
+            }
+
+            cameras.Add((new string(name, 0, (int)written).TrimEnd(' '), ids));
+        }
+
+        return cameras;
     }
 
     // Leaves Mute as the test found it: a Shybun running here keeps its own, and a key the test made goes.
@@ -395,4 +477,11 @@ public class CameraLiveTests
 
         return count == 0 ? 0 : (double)sum / count;
     }
+}
+
+[GeneratedComClass]
+[SupportedOSPlatform("windows10.0.15063")]
+internal sealed partial class ActivityCallback(Action<IMFSensorActivitiesReport> handler) : IMFSensorActivitiesReportCallback
+{
+    public void OnActivitiesReport(IMFSensorActivitiesReport sensorActivitiesReport) => handler(sensorActivitiesReport);
 }
