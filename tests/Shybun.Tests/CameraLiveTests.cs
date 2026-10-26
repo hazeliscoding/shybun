@@ -7,6 +7,7 @@ using System.Security.Principal;
 using Microsoft.Win32;
 using Shybun.Camera;
 using Shybun.Core;
+using Shybun.Desktop;
 using Windows.Win32;
 using Windows.Win32.Media.MediaFoundation;
 using Windows.Win32.System.Com;
@@ -16,7 +17,7 @@ namespace Shybun.Tests;
 /// <summary>
 /// M2's checks on the real camera. They open the webcam, so run them only when nobody is on a call. Each read keeps
 /// only a frame count and an average brightness, never a frame. The Frame Server checks need the Shybun camera
-/// installed from the tray menu.
+/// installed, from the tray menu or by the elevated-step check below.
 /// </summary>
 public class CameraLiveTests
 {
@@ -90,6 +91,27 @@ public class CameraLiveTests
             LiveTests.Unmute(mics);
         }
     });
+
+    // The install step as people run it: two UAC prompts, which the owner approves. It removes the media source and
+    // installs it again from beside a published Shybun.exe, so set SHYBUN_EXE. No camera stream is stopped.
+    [Fact(Explicit = true)]
+    public async Task The_elevated_step_uninstalls_and_installs_the_media_source()
+    {
+        var exe = Environment.GetEnvironmentVariable("SHYBUN_EXE")
+            ?? throw new InvalidOperationException("Set SHYBUN_EXE to a published Shybun.exe: the media source ships beside it.");
+        var shipped = Path.Combine(Path.GetDirectoryName(exe)!, "Shybun.Camera.dll");
+        var installed = Path.Combine(CameraSetup.Folder, "Shybun.Camera.dll");
+
+        Assert.True(await CameraSetup.RunElevated(exe, CameraSetup.UninstallArgument), "The uninstall failed or its prompt was declined.");
+        Assert.False(CameraSetup.Installed);
+        Assert.False(File.Exists(installed));
+
+        Assert.True(await CameraSetup.RunElevated(exe, CameraSetup.InstallArgument), "The install failed or its prompt was declined.");
+        Assert.True(CameraSetup.Installed);
+        Assert.Equal(File.ReadAllBytes(shipped), File.ReadAllBytes(installed));
+        using var server = Registry.LocalMachine.OpenSubKey($@"Software\Classes\CLSID\{{{CameraContract.ClassId}}}\InprocServer32");
+        Assert.Equal(installed, server?.GetValue(null));
+    }
 
     // Leaves Mute as the test found it: a Shybun running here keeps its own, and a key the test made goes.
     private static void Run(Action test)
