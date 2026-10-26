@@ -2,6 +2,7 @@ GetForegroundWindow
 IAudioCaptureClient
 IAudioClient
 IAudioEndpointVolume
+IClassFactory
 IMFActivate
 IMFMediaBuffer
 IMFSample
@@ -17,7 +18,9 @@ MF_MT_MAJOR_TYPE
 MF_MT_SUBTYPE
 MF_SOURCE_READER_ENABLE_VIDEO_PROCESSING
 MF_VERSION
+MF_VIRTUALCAMERA_ASSOCIATED_CAMERA_SOURCES
 MFCreateAttributes
+MFCreateCollection
 MFCreateDeviceSource
 MFCreateMediaType
 MFCreateSourceReaderFromMediaSource

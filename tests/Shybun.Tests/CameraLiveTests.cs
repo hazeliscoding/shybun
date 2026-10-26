@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using System.Security.AccessControl;
@@ -7,6 +8,7 @@ using Microsoft.Win32;
 using Shybun.Camera;
 using Windows.Win32;
 using Windows.Win32.Media.MediaFoundation;
+using Windows.Win32.System.Com;
 
 namespace Shybun.Tests;
 
@@ -20,40 +22,43 @@ public class CameraLiveTests
     private const string TestCameraName = "Shybun camera (test)";
 
     [Fact(Explicit = true)]
-    public void The_Shybun_camera_passes_frames_through_and_sends_the_camera_off_image_while_muted()
+    public void The_Shybun_camera_passes_frames_through_and_sends_the_camera_off_image_while_muted() => Run(() =>
+    {
+        var real = RealCamera();
+        var direct = ReadDirectly(real);
+        using var mute = MuteKey();
+        var shybun = Within(() => CreateTestCamera(real.Link));
+        try
+        {
+            CheckLiveThenMuted(mute, () => Open(WaitForCamera(TestCameraName).Link), direct);
+        }
+        finally
+        {
+            shybun.Remove();
+            shybun.Shutdown();
+        }
+    });
+
+    // Loads the media source into this process, as Microsoft's HWMediaSourceTest does, so a fault in it shows here
+    // rather than inside the Frame Server. It needs no install.
+    [Fact(Explicit = true)]
+    public void The_media_source_passes_frames_through_and_sends_the_camera_off_image_in_this_process() => Run(() =>
+    {
+        var real = RealCamera();
+        var direct = ReadDirectly(real);
+        using var mute = MuteKey();
+        CheckLiveThenMuted(mute, () => ActivateHere(real.Activate), direct);
+    });
+
+    // Leaves Mute as the test found it: a Shybun running here keeps its own, and a key the test made goes.
+    private static void Run(Action test)
     {
         PInvoke.MFStartup(PInvoke.MF_VERSION, 0).ThrowOnFailure();
         var hadKey = Registry.CurrentUser.OpenSubKey(@"Software\Shybun") is not null;
+        var before = Registry.CurrentUser.OpenSubKey(MuteSwitch.KeyPath)?.GetValue(MuteSwitch.ValueName);
         try
         {
-            var real = Cameras().First(camera => camera.Name != TestCameraName);
-            var direct = Watch(Open(real.Link));
-            Report($"{real.Name} on its own", direct);
-            Assert.True(direct.Frames >= 10, $"{real.Name} gave {direct.Frames} frames on its own");
-            Assert.True(direct.Brightness > 20, $"{real.Name} is too dark to compare ({direct.Brightness:F0}); light the room");
-
-            using var mute = MuteKey();
-            var shybun = CreateTestCamera(real.Link);
-            try
-            {
-                mute.SetValue(MuteSwitch.ValueName, 0);
-                var live = Watch(Open(WaitForCamera(TestCameraName).Link));
-                Report("Through Shybun, live", live);
-                Assert.True(live.Frames >= 10, $"The Shybun camera gave {live.Frames} frames while live");
-                Assert.InRange(live.Brightness, direct.Brightness * 0.7, direct.Brightness * 1.3);
-
-                mute.SetValue(MuteSwitch.ValueName, 1);
-                var muted = Watch(Open(WaitForCamera(TestCameraName).Link));
-                var cameraOff = AverageLuma(CameraOff.Frame(PInvoke.MFVideoFormat_NV12, muted.Width, muted.Height, 0)!, muted.Width * muted.Height);
-                Report($"Through Shybun, muted (the camera-off image is {cameraOff:F0})", muted);
-                Assert.True(muted.Frames >= 10, $"The Shybun camera gave {muted.Frames} frames while muted");
-                Assert.InRange(muted.Brightness, cameraOff - 6, cameraOff + 6);
-            }
-            finally
-            {
-                shybun.Remove();
-                shybun.Shutdown();
-            }
+            test();
         }
         finally
         {
@@ -61,13 +66,94 @@ public class CameraLiveTests
             {
                 Registry.CurrentUser.DeleteSubKeyTree(@"Software\Shybun", throwOnMissingSubKey: false);
             }
+            else if (Registry.CurrentUser.OpenSubKey(MuteSwitch.KeyPath, writable: true) is { } key)
+            {
+                using (key)
+                {
+                    if (before is null)
+                    {
+                        key.DeleteValue(MuteSwitch.ValueName, throwOnMissingValue: false);
+                    }
+                    else
+                    {
+                        key.SetValue(MuteSwitch.ValueName, before);
+                    }
+                }
+            }
 
             PInvoke.MFShutdown();
         }
     }
 
+    private static (string Name, string Link, IMFActivate Activate) RealCamera() =>
+        Cameras().First(camera => !camera.Name.StartsWith(TestCameraName, StringComparison.Ordinal));
+
+    private static (int Frames, double Brightness, int Width, int Height) ReadDirectly((string Name, string Link, IMFActivate Activate) real)
+    {
+        var direct = Within(() => Watch(Open(real.Link)));
+        Report($"{real.Name} on its own", direct);
+        Assert.True(direct.Frames >= 10, $"{real.Name} gave {direct.Frames} frames on its own");
+        Assert.True(direct.Brightness > 20, $"{real.Name} is too dark to compare ({direct.Brightness:F0}); light the room");
+        return direct;
+    }
+
+    // With Mute off the Shybun camera must look like the real one; with it on, like the camera-off image.
+    private static void CheckLiveThenMuted(RegistryKey mute, Func<IMFMediaSource> open, (int Frames, double Brightness, int Width, int Height) direct)
+    {
+        mute.SetValue(MuteSwitch.ValueName, 0);
+        var live = Within(() => Watch(open()));
+        Report("Through Shybun, live", live);
+        Assert.True(live.Frames >= 10, $"The Shybun camera gave {live.Frames} frames while live");
+        Assert.InRange(live.Brightness, direct.Brightness * 0.7, direct.Brightness * 1.3);
+
+        mute.SetValue(MuteSwitch.ValueName, 1);
+        var muted = Within(() => Watch(open()));
+        var cameraOff = AverageLuma(CameraOff.Frame(PInvoke.MFVideoFormat_NV12, muted.Width, muted.Height, 0)!, muted.Width * muted.Height);
+        Report($"Through Shybun, muted (the camera-off image is {cameraOff:F0})", muted);
+        Assert.True(muted.Frames >= 10, $"The Shybun camera gave {muted.Frames} frames while muted");
+        Assert.InRange(muted.Brightness, cameraOff - 6, cameraOff + 6);
+    }
+
+    // What the Frame Server does: ask the class for an activator, hand it the real camera, and activate it.
+    private static unsafe IMFMediaSource ActivateHere(IMFActivate realCamera)
+    {
+        var clsid = new Guid(Exports.ClassId);
+        var iid = typeof(IClassFactory).GUID;
+        void* factory;
+        delegate* unmanaged<Guid*, Guid*, void**, int> getClassObject = &Exports.DllGetClassObject;
+        Assert.Equal(0, getClassObject(&clsid, &iid, &factory));
+        iid = typeof(IMFActivate).GUID;
+        Wrap<IClassFactory>(factory).CreateInstance(null, &iid, out var instance);
+        var activator = Wrap<IMFActivate>(instance);
+
+        PInvoke.MFCreateCollection(out var cameras).ThrowOnFailure();
+        cameras.AddElement(realCamera);
+        activator.SetUnknown(PInvoke.MF_VIRTUALCAMERA_ASSOCIATED_CAMERA_SOURCES, cameras);
+        activator.SetString(MuteSwitch.UserAttribute, WindowsIdentity.GetCurrent().User!.Value);
+        iid = typeof(IMFMediaSource).GUID;
+        activator.ActivateObject(&iid, out var source);
+        return Wrap<IMFMediaSource>(source);
+    }
+
+    // The media source's objects are managed in this process too. Wrapping them as COM objects, without unwrapping,
+    // reaches them through their COM interfaces as the Frame Server does, not through their .NET types.
+    private static unsafe T Wrap<T>(void* pointer)
+        where T : class
+    {
+        var wrapper = (T)new StrategyBasedComWrappers().GetOrCreateObjectForComInstance((nint)pointer, CreateObjectFlags.None);
+        Marshal.Release((nint)pointer);
+        return wrapper;
+    }
+
     private static void Report(string what, (int Frames, double Brightness, int Width, int Height) seen) =>
         TestContext.Current.SendDiagnosticMessage($"{what}: {seen.Frames} frames at {seen.Width}x{seen.Height}, brightness {seen.Brightness:F0}");
+
+    // A camera that sends nothing blocks ReadSample for good, so each step gets a deadline.
+    private static T Within<T>(Func<T> step)
+    {
+        var task = Task.Run(step);
+        return task.Wait(TimeSpan.FromSeconds(20)) ? task.Result : throw new TimeoutException("The camera step didn't finish within 20 s.");
+    }
 
     // The key the tray app writes Mute to. Local Service, which the Frame Server runs as, may read it.
     private static RegistryKey MuteKey()
@@ -99,12 +185,13 @@ public class CameraLiveTests
         return camera;
     }
 
-    private static (string Name, string Link) WaitForCamera(string name)
+    private static (string Name, string Link, IMFActivate Activate) WaitForCamera(string name)
     {
         var clock = Stopwatch.StartNew();
         while (clock.ElapsedMilliseconds < 5000)
         {
-            if (Cameras().FirstOrDefault(camera => camera.Name == name) is { Link: not null } found)
+            // Windows lists a virtual camera as "<name> (Windows Virtual Camera)".
+            if (Cameras().FirstOrDefault(camera => camera.Name.StartsWith(name, StringComparison.Ordinal)) is { Link: not null } found)
             {
                 return found;
             }
@@ -112,22 +199,23 @@ public class CameraLiveTests
             Thread.Sleep(250);
         }
 
-        throw new TimeoutException($"{name} never appeared among the cameras. Is the media source installed?");
+        throw new TimeoutException(
+            $"{name} never appeared among the cameras ({string.Join(", ", Cameras().Select(camera => camera.Name))}). Is the media source installed?");
     }
 
-    private static unsafe List<(string Name, string Link)> Cameras()
+    private static unsafe List<(string Name, string Link, IMFActivate Activate)> Cameras()
     {
         PInvoke.MFCreateAttributes(out var attributes, 1).ThrowOnFailure();
         attributes.SetGUID(PInvoke.MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE, PInvoke.MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE_VIDCAP_GUID);
         PInvoke.MFEnumDeviceSources(attributes, out var activates, out var count).ThrowOnFailure();
-        var cameras = new List<(string, string)>();
+        var cameras = new List<(string, string, IMFActivate)>();
         try
         {
             for (var i = 0; i < count; i++)
             {
                 var activate = ComInterfaceMarshaller<IMFActivate>.ConvertToManaged(activates[i])!;
                 Marshal.Release((nint)activates[i]);
-                cameras.Add((Text(activate, PInvoke.MF_DEVSOURCE_ATTRIBUTE_FRIENDLY_NAME), Text(activate, PInvoke.MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE_VIDCAP_SYMBOLIC_LINK)));
+                cameras.Add((Text(activate, PInvoke.MF_DEVSOURCE_ATTRIBUTE_FRIENDLY_NAME), Text(activate, PInvoke.MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE_VIDCAP_SYMBOLIC_LINK), activate));
             }
         }
         finally
@@ -193,13 +281,17 @@ public class CameraLiveTests
                     continue;
                 }
 
-                var sample = ComInterfaceMarshaller<IMFSample>.ConvertToManaged(raw)!;
-                Marshal.Release((nint)raw);
                 frames++;
                 if (clock.ElapsedMilliseconds > 2000)
                 {
-                    settled.Add(AverageLuma(sample, width * height));
+                    settled.Add(AverageLuma(raw, width * height));
                 }
+
+                Marshal.Release((nint)raw);
+                // A frame's wrappers hold one of the camera's few buffers until they're collected, and the camera
+                // stops sending when it has none left.
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
             }
 
             return (frames, settled.Count == 0 ? 0 : settled.Average(), width, height);
@@ -210,8 +302,10 @@ public class CameraLiveTests
         }
     }
 
-    private static unsafe double AverageLuma(IMFSample sample, int lumaBytes)
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static unsafe double AverageLuma(IMFSample_unmanaged* raw, int lumaBytes)
     {
+        var sample = ComInterfaceMarshaller<IMFSample>.ConvertToManaged(raw)!;
         sample.ConvertToContiguousBuffer(out var buffer);
         byte* data;
         uint length;
