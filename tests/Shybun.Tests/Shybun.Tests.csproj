@@ -10,6 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\Shybun.Camera\Shybun.Camera.csproj" />
     <ProjectReference Include="..\..\src\Shybun.Core\Shybun.Core.csproj" />
     <ProjectReference Include="..\..\src\Shybun.Desktop\Shybun.Desktop.csproj" />
   </ItemGroup>

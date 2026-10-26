@@ -11,6 +11,7 @@ public class GuardrailTests
 
     private static readonly Assembly Core = Assembly.Load("Shybun.Core");
     private static readonly Assembly Desktop = Assembly.Load("Shybun");
+    private static readonly Assembly Camera = Assembly.Load("Shybun.Camera");
 
     [Fact]
     public void Core_does_not_reference_Avalonia() => Assert.Empty(References(Core, "Avalonia"));
@@ -24,6 +25,7 @@ public class GuardrailTests
     {
         Assert.Empty(References(Core, "System.Net"));
         Assert.Empty(References(Desktop, "System.Net"));
+        Assert.Empty(References(Camera, "System.Net"));
     }
 
     // Positive controls: the same checks find what they exist to catch.
