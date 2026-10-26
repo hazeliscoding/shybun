@@ -48,6 +48,10 @@ Claude's calls:
 - **CsWin32 runs as a build task (2026-10-25),** so its COM interfaces use .NET's COM source generators, which NativeAOT supports, with runtime marshaling turned off. Windows' device and mute callbacks are `[GeneratedComClass]` classes; one reached the native build in the live test. This gives up nothing found yet; Staypaw and Sweepling use CsWin32's older, marshaled mode.
 - **Silence means below one step of 16-bit audio, 1/32768 (2026-10-25).** A muted mic measured 2e-10, float residue from Windows' audio processing. The live test asks for sound from at least one live mic, not every one: the owner's Logitech PRO X Wireless headset read live but sent pure silence, because it was switched off or muted on the headset. This gives up proving sound on every mic.
 - **The tray's state icons are the app icon with a dot (2026-10-25):** blush while muted, ink when a mic is live during Mute or can't be read. `scripts/make-icons.cs` draws them, so the mark itself is unchanged.
+- **The Shybun camera wraps the real camera as Microsoft's sample does (2026-10-26).** The virtual camera names the real camera with `AddDeviceSourceInfo`, and the Frame Server hands it to the media source. `MediaSource` and `MediaStream` are ported from Microsoft's `HWMediaSource` (MIT), and the COM hosting follows VCamNetSample (MIT). All interop goes through CsWin32, so VCamNetSample's DirectN isn't a dependency. This gives up DirectN's ready-made helpers.
+- **Mute reaches the camera through the registry (2026-10-26).** The tray app writes `Mute` to `HKCU\Software\Shybun\Camera` and lets Local Service, which the Frame Server runs as, read it; the virtual camera tells the media source whose key that is. The media source reads it for every frame and writes nothing. This gives up hearing back from the camera: the badge item settles how the camera confirms, since a write-back would widen the camera's "does nothing else".
+- **The camera fails closed (2026-10-26).** When Mute can't be read, the camera-off image goes out, and a format it can't draw sends nothing rather than the real frame. This gives up a working camera when the tray app's key is missing or broken.
+- **The camera-off image stands Shiori on the frame's bottom edge (2026-10-26),** at 90% of its height, centred on heather grey `#BCB8B9`, like someone sitting at a webcam. It's drawn in the stream's own format: NV12, YUY2, RGB32 or MJPG. This gives up centring her vertically.
 
 ## M0: Placeholder (as soon as possible)
 
@@ -101,6 +105,8 @@ Not yet seen live: a mic plugged in or switched on while muted (Core-tested only
 - [ ] The camera-off image: Shiori's hidden-and-quiet sticker, waist-up and centred on a flat heather-grey 16:9 frame, composed in Shybun from `docs/brand/shiori/hidden-and-quiet.png`.
 
 **Done when:** a frame probe reading the Shybun camera gets real frames unmuted and only camera-off frames muted; a probe that opens the real camera directly makes the badge show the camera as unconfirmed, or, without the Shybun camera installed, say Shybun can't turn it off; and Windows' Camera app, Teams, Discord and Google Meet in a browser each list the Shybun camera and show the camera-off image while muted.
+
+**Built 2026-10-26, not yet run on the webcam.** `Shybun.Camera` wraps the real camera, reads Mute and sends the camera-off image while it's on. Unit tests cover the image and the Mute switch, and CI publishes the DLL with no AOT warnings. `CameraLiveTests` waits for the owner to approve the install's UAC prompt. The tray app doesn't create the Shybun camera or write Mute yet.
 
 ## M3: 1.0
 
