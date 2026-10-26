@@ -11,7 +11,7 @@
 
 Windows has no camera key, and its own mic key (Win+Alt+K) works only in apps that support it. PowerToys' Video Conference Mute did both, until [v0.88.0 removed it](https://github.com/microsoft/PowerToys/pull/36772) in January 2025. People still keep PowerToys at 0.87.1 to hold on to it ([PowerToys #38604](https://github.com/microsoft/PowerToys/issues/38604)).
 
-> **Status:** in development. The mic half and the badge work when built from source; the camera and a release come next. See [ROADMAP.md](ROADMAP.md). Until Shybun ships, use one of the tools under [Alternatives](#alternatives).
+> **Status:** in development. The mic half, the badge and the Shybun camera work when built from source; the camera's installer, its badge and a release come next. See [ROADMAP.md](ROADMAP.md). Until Shybun ships, use one of the tools under [Alternatives](#alternatives).
 
 ## Before and after
 
@@ -34,7 +34,7 @@ Planned for 1.0:
 - **One key for both.** It mutes every mic Windows has and the Shybun camera, from any app, without moving focus.
 - **A badge you can trust.** A small always-on-top badge shows the mic's and the camera's state as Windows reports it, read back after every change. When Shybun can't confirm a device is quiet, the badge says so instead of guessing.
 - **New mics join muted.** A headset plugged in while you're muted is muted the moment it appears.
-- **The Shybun camera.** Pick it once in each meeting app. It passes your camera through, and sends a camera-off image while you're muted. It needs Windows 11, and admin once to install. Without admin, Shybun can't turn the camera off, but the badge still shows when an app has it on.
+- **The Shybun camera.** Pick it once in each meeting app, where Windows lists it as "Shybun camera (Windows Virtual Camera)". It passes your camera through, and sends a camera-off image while you're muted. It needs Windows 11, and admin once to install. Without admin, Shybun can't turn the camera off, but the badge still shows when an app has it on.
 - **Installs signed, through winget, and updates itself.** A tick in the tray menu turns updates off.
 
 The mic half mutes the device in Windows, so a meeting app's own mute icon doesn't change. Trust the badge, not the app.
