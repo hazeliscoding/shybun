@@ -60,6 +60,7 @@ Claude's calls:
 - **"Muted" means the mics and the Shybun camera both (2026-10-26).** The badge says "Muted" only once every mic and the camera read back muted. Without a Shybun camera it says "Mic muted", and it names the camera when the camera reads live during Mute or can't be read. Mute is read back after Shybun writes it, since Shybun is its only writer. This gives up catching at once a write by anything else, such as a test: it shows at the next press.
 - **Who is using a camera comes from Media Foundation's sensor activity monitor, not `ConsentStore` (2026-10-26).** `ConsentStore\webcam` keeps each app's start and stop times but not which camera: Discord on the Shybun camera looked just like an app on the webcam. The monitor lists each camera's processes, needs no admin, and credits the webcam's use to the app, so an app on the Shybun camera streams both cameras, and an app on the webcam streams only the webcam. Browsers, Teams and Discord hold cameras open without streaming, and processes that have exited stay listed, so only streaming counts. This gives up a plain registry read, for a callback the tray app keeps running.
 - **An app on the real camera turns Muted into a warning, and the key ignores it (2026-10-26).** While muted, an app streaming a real camera other than through the Shybun camera, including through another virtual camera around it, makes the badge show the unconfirmed dot with "An app is using the webcam directly", or, with no Shybun camera installed, "Shybun can't turn the camera off". A live mic still shows first. The key toggles on the readings alone, so it still unmutes while that app streams: it can't change what that app does. The warning shows at once, since a moment's warning as an app starts on the Shybun camera beats a moment's false Muted. This gives up showing the mic's state while the warning is up.
+- **Setup installs Shybun under the pack ID `Shybun.Desktop` (2026-10-26),** as Prompuff does. Velopack installs to `%LOCALAPPDATA%\<pack ID>` and deletes that folder on uninstall, and `%LOCALAPPDATA%\Shybun` holds the mute log. Velopack's hooks run first in `Main`, before the camera's install arguments. Velopack adds 3.9 MB to the exe, which is now 22,340,096 bytes. This gives up an install folder named plainly Shybun.
 
 ## M0: Placeholder (as soon as possible)
 
@@ -120,12 +121,12 @@ Not yet seen live: the badge without the Shybun camera installed (Core-tested on
 
 ## M3: 1.0
 
-- [ ] A Velopack per-user Setup, built by a release workflow.
+- [x] A Velopack per-user Setup, built by a release workflow. *(A manual run on 2026-10-26 built `shybun-setup-win-x64.exe` unsigned; not yet installed from it.)*
 - [ ] Shybun updates itself through Velopack, as Sweepling does: the first check a minute after start, then every 4 hours, with an "Update automatically" tick in the tray menu and no check in a build from source. A downloaded update waits until no app is using a mic or a camera; check first that Windows' `ConsentStore` shows that (see M2).
 - [ ] Decide how a release that changes the Shybun camera reaches `%ProgramFiles%\Shybun`, which needs admin.
 - [ ] Uninstalling Shybun removes the Shybun camera, through the same UAC step as the tray menu's Remove.
 - [ ] The install step checks the copied media source's signature against Shybun.exe's own before registering it. A swapped DLL beside a signed exe would otherwise install under a "verified publisher" UAC prompt.
-- [ ] Sign releases with Artifact Signing through OIDC, from a `release` environment that only `v*` tags can deploy to, as in Staypaw.
+- [ ] Sign releases with Artifact Signing through OIDC, from a `release` environment that only `v*` tags can deploy to, as in Staypaw. *(Set up 2026-10-26: a federated credential for the `release` environment, with the signer role on one certificate profile and no client secret. The first signed build is the first tag.)*
 - [ ] Scan the published exe and the media source with Microsoft Defender.
 - [ ] Submit a winget manifest.
 - [ ] A screenshot and a short demo in the README.
