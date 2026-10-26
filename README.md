@@ -11,7 +11,7 @@
 
 Windows has no camera key, and its own mic key (Win+Alt+K) works only in apps that support it. PowerToys' Video Conference Mute did both, until [v0.88.0 removed it](https://github.com/microsoft/PowerToys/pull/36772) in January 2025. People still keep PowerToys at 0.87.1 to hold on to it ([PowerToys #38604](https://github.com/microsoft/PowerToys/issues/38604)).
 
-> **Status:** in development. The mic half, the badge and the Shybun camera, installed from the tray menu, work when built from source; the camera's badge and a release come next. See [ROADMAP.md](ROADMAP.md). Until Shybun ships, use one of the tools under [Alternatives](#alternatives).
+> **Status:** in development. The mic half, the Shybun camera, installed from the tray menu, and the badge for both work when built from source; a release comes next. See [ROADMAP.md](ROADMAP.md). Until Shybun ships, use one of the tools under [Alternatives](#alternatives).
 
 ## Before and after
 
