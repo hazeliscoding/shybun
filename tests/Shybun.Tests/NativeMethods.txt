@@ -1,3 +1,6 @@
+CoCreateInstance
+CUIAutomation
+FindWindow
 GetForegroundWindow
 IAudioCaptureClient
 IAudioClient
@@ -10,6 +13,8 @@ IMFSensorActivitiesReportCallback
 IMFSourceReader
 IMFVirtualCamera
 IMMDeviceEnumerator
+IsWindowVisible
+IUIAutomation
 LoadLibraryEx
 MF_DEVSOURCE_ATTRIBUTE_FRIENDLY_NAME
 MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE

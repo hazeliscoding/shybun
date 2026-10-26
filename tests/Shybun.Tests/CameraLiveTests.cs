@@ -13,6 +13,7 @@ using Shybun.Desktop;
 using Windows.Win32;
 using Windows.Win32.Media.MediaFoundation;
 using Windows.Win32.System.Com;
+using Windows.Win32.UI.Accessibility;
 
 namespace Shybun.Tests;
 
@@ -164,6 +165,91 @@ public class CameraLiveTests
         Assert.True(streaming.ContainsKey(("Shybun camera opened", "Shybun camera")));
         Assert.True(streaming.ContainsKey(("Shybun camera opened", "webcam")));
     });
+
+    // M2's Done when, for an app on the real camera: while muted, one streaming the webcam directly makes the badge
+    // say so, and one on the Shybun camera leaves it saying Muted. It presses Win+Shift+Q and mutes every mic, so keep
+    // off the keyboard and off calls, and quit any other Shybun first, since it would hold the key.
+    [Fact(Explicit = true)]
+    public void The_badge_warns_while_an_app_streams_the_webcam_directly_but_not_through_the_Shybun_camera() => Run(() =>
+    {
+        var mics = LiveTests.Mics();
+        Assert.All(mics, mic => Assert.False(LiveTests.IsMuted(mic.Volume), $"Unmute {mic.Id} before running this test."));
+        var real = RealCamera();
+        using var shybun = LiveTests.StartShybun();
+        try
+        {
+            LiveTests.PressMuteKey();
+            Thread.Sleep(1000);
+            Assert.Equal("Muted", BadgeText());
+
+            var direct = SaysWhileStreaming(real.Link);
+            TestContext.Current.SendDiagnosticMessage($"Webcam opened directly: {string.Join(" / ", direct)}");
+            Assert.Contains("An app is using the webcam directly", direct);
+            Thread.Sleep(1500);
+            Assert.Equal("Muted", BadgeText());
+
+            var throughShybun = SaysWhileStreaming(WaitForCamera("Shybun camera (Windows Virtual Camera)").Link);
+            TestContext.Current.SendDiagnosticMessage($"Shybun camera opened: {string.Join(" / ", throughShybun)}");
+            Assert.Equal(["Muted"], throughShybun);
+        }
+        finally
+        {
+            shybun.Kill();
+            LiveTests.Unmute(mics);
+        }
+    });
+
+    // Everything the badge said while a camera streamed, sampled every 200 ms once the stream had a second to start.
+    private static List<string?> SaysWhileStreaming(string link)
+    {
+        var watching = Task.Run(() => Watch(Open(link)));
+        Thread.Sleep(1000);
+        var said = new List<string?>();
+        while (!watching.IsCompleted)
+        {
+            said.Add(BadgeText());
+            Thread.Sleep(200);
+        }
+
+        Assert.True(watching.Wait(TimeSpan.FromSeconds(20)), "The camera step didn't finish within 20 s.");
+        return said.Distinct().ToList();
+    }
+
+    // The badge's label, read through UI Automation, or null while it's hidden.
+    private static string? BadgeText()
+    {
+        var window = PInvoke.FindWindow(null, "Shybun badge");
+        if (window.IsNull || !PInvoke.IsWindowVisible(window))
+        {
+            return null;
+        }
+
+        PInvoke.CoCreateInstance(typeof(CUIAutomation).GUID, null, CLSCTX.CLSCTX_INPROC_SERVER, out IUIAutomation automation).ThrowOnFailure();
+        var root = automation.ElementFromHandle(window);
+        return FirstText(automation.get_RawViewWalker(), root);
+    }
+
+    // The first text element's name: the window's chrome comes before the label.
+    private static unsafe string? FirstText(IUIAutomationTreeWalker walker, IUIAutomationElement parent)
+    {
+        for (var child = walker.GetFirstChildElement(parent); child is not null; child = walker.GetNextSiblingElement(child))
+        {
+            if (child.get_CurrentControlType() == UIA_CONTROLTYPE_ID.UIA_TextControlTypeId)
+            {
+                var text = child.get_CurrentName();
+                var name = text.ToString();
+                Marshal.FreeBSTR((nint)text.Value);
+                return name;
+            }
+
+            if (FirstText(walker, child) is { } inner)
+            {
+                return inner;
+            }
+        }
+
+        return null;
+    }
 
     // Each camera's name, and the processes streaming it.
     [SupportedOSPlatform("windows10.0.15063")]
