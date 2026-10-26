@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
+using System.Runtime.Versioning;
 using System.Security;
 using System.Security.AccessControl;
 using System.Security.Principal;
@@ -39,14 +40,10 @@ internal sealed class ShybunCamera : IDisposable
             return;
         }
 
-        // The one-time install registers the media source for the whole machine. Reading that needs no admin.
-        using (var installed = Registry.LocalMachine.OpenSubKey($@"Software\Classes\CLSID\{{{CameraContract.ClassId}}}\InprocServer32"))
+        if (!CameraSetup.Installed)
         {
-            if (installed is null)
-            {
-                Status = "The Shybun camera isn't installed";
-                return;
-            }
+            Status = "The Shybun camera isn't installed";
+            return;
         }
 
         PrepareMute(mute);
@@ -75,6 +72,29 @@ internal sealed class ShybunCamera : IDisposable
         }
     }
 
+    /// <summary>
+    /// Takes the Shybun camera out of every app's camera list, before its media source is uninstalled. Only the user
+    /// who made it can, so the elevated step doesn't.
+    /// </summary>
+    public void Remove()
+    {
+        if (!OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22000))
+        {
+            return;
+        }
+
+        try
+        {
+            StartMediaFoundation();
+            (_camera ?? Open()).Remove();
+            _camera = null;
+        }
+        catch (COMException)
+        {
+            // There was none to remove.
+        }
+    }
+
     public void Dispose()
     {
         if (_mfStarted)
@@ -92,23 +112,13 @@ internal sealed class ShybunCamera : IDisposable
 
         try
         {
-            PInvoke.MFStartup(PInvoke.MF_VERSION, 0).ThrowOnFailure();
-            _mfStarted = true;
+            StartMediaFoundation();
             if (RealCameras().FirstOrDefault() is not { Link: not null } real)
             {
                 return "No camera for the Shybun camera to wrap";
             }
 
-            // The system's lifetime: apps keep the Shybun camera selected while Shybun isn't running. The same
-            // arguments open the same camera again on the next start.
-            PInvoke.MFCreateVirtualCamera(
-                MFVirtualCameraType.MFVirtualCameraType_SoftwareCameraSource,
-                MFVirtualCameraLifetime.MFVirtualCameraLifetime_System,
-                MFVirtualCameraAccess.MFVirtualCameraAccess_CurrentUser,
-                Name,
-                $"{{{CameraContract.ClassId}}}",
-                default,
-                out var camera).ThrowOnFailure();
+            var camera = Open();
             camera.SetString(CameraContract.UserAttribute, WindowsIdentity.GetCurrent().User!.Value);
             camera.AddDeviceSourceInfo(real.Link);
             camera.Start(null);
@@ -119,6 +129,31 @@ internal sealed class ShybunCamera : IDisposable
         {
             return "The Shybun camera didn't start";
         }
+    }
+
+    private void StartMediaFoundation()
+    {
+        if (!_mfStarted)
+        {
+            PInvoke.MFStartup(PInvoke.MF_VERSION, 0).ThrowOnFailure();
+            _mfStarted = true;
+        }
+    }
+
+    // The system's lifetime: apps keep the Shybun camera selected while Shybun isn't running. The same arguments open
+    // the same camera again on the next start.
+    [SupportedOSPlatform("windows10.0.22000")]
+    private static IMFVirtualCamera Open()
+    {
+        PInvoke.MFCreateVirtualCamera(
+            MFVirtualCameraType.MFVirtualCameraType_SoftwareCameraSource,
+            MFVirtualCameraLifetime.MFVirtualCameraLifetime_System,
+            MFVirtualCameraAccess.MFVirtualCameraAccess_CurrentUser,
+            Name,
+            $"{{{CameraContract.ClassId}}}",
+            default,
+            out var camera).ThrowOnFailure();
+        return camera;
     }
 
     // Local Service, which the Frame Server runs as, may read Mute and nothing else. A first start writes Mute as it

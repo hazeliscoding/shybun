@@ -21,6 +21,7 @@ MFEnumDeviceSources
 MFShutdown
 MFStartup
 MMDeviceEnumerator
+MoveFileEx
 RegisterClassEx
 RegisterHotKey
 SetWindowLong

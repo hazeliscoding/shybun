@@ -21,7 +21,8 @@ internal sealed class MuteController : IDisposable
     private readonly Badge _badge = new();
     private readonly HotKey _key;
     private readonly NativeMenuItem _cameraItem = new() { IsEnabled = false };
-    private readonly ShybunCamera _camera;
+    private readonly NativeMenuItem _setupItem = new();
+    private ShybunCamera _camera;
 
     public MuteController(TrayIcon tray)
     {
@@ -32,15 +33,17 @@ internal sealed class MuteController : IDisposable
         _mics.Removed += OnRemoved;
         _mics.Changed += OnChanged;
         _key = new HotKey(Press);
-        _camera = new ShybunCamera(_mute.On, status => Dispatcher.UIThread.Post(() => _cameraItem.Header = status));
-        _cameraItem.Header = _camera.Status;
+        _camera = StartCamera();
+        _setupItem.Click += OnSetup;
+        ShowSetup();
         _tray.Menu?.Items.Insert(0, new NativeMenuItem
         {
             Header = _key.Registered ? $"Mute key: {HotKey.Name}" : $"{HotKey.Name} is taken by another app",
             IsEnabled = false,
         });
         _tray.Menu?.Items.Insert(1, _cameraItem);
-        _tray.Menu?.Items.Insert(2, new NativeMenuItemSeparator());
+        _tray.Menu?.Items.Insert(2, _setupItem);
+        _tray.Menu?.Items.Insert(3, new NativeMenuItemSeparator());
         Show();
     }
 
@@ -67,6 +70,38 @@ internal sealed class MuteController : IDisposable
 
         Log(MuteCause.Key);
         Show();
+    }
+
+    private ShybunCamera StartCamera()
+    {
+        var camera = new ShybunCamera(_mute.On, status => Dispatcher.UIThread.Post(() => _cameraItem.Header = status));
+        _cameraItem.Header = camera.Status;
+        return camera;
+    }
+
+    private void ShowSetup()
+    {
+        _setupItem.IsVisible = OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22000);
+        _setupItem.Header = CameraSetup.Installed ? "Remove the Shybun camera..." : "Install the Shybun camera...";
+    }
+
+    // async void: a menu click has nothing to hand a task back to.
+    private async void OnSetup(object? sender, EventArgs e)
+    {
+        _setupItem.IsEnabled = false;
+        var installed = CameraSetup.Installed;
+        _cameraItem.Header = installed ? "Removing the Shybun camera" : "Installing the Shybun camera";
+        if (installed)
+        {
+            // Out of the camera lists before its media source goes. If the prompt is declined, it's made again below.
+            await Task.Run(_camera.Remove);
+        }
+
+        await CameraSetup.RunElevated(installed ? CameraSetup.UninstallArgument : CameraSetup.InstallArgument);
+        _camera.Dispose();
+        _camera = StartCamera();
+        ShowSetup();
+        _setupItem.IsEnabled = true;
     }
 
     private void OnAdded(string id, bool? muted)
