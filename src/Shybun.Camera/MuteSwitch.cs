@@ -1,5 +1,6 @@
 using System.Security.AccessControl;
 using Microsoft.Win32;
+using Shybun.Core;
 
 namespace Shybun.Camera;
 
@@ -7,14 +8,8 @@ namespace Shybun.Camera;
 /// Mute as the tray app last set it in the user's registry. The Frame Server runs as Local Service and reaches the
 /// key through HKEY_USERS, so the tray app's key grants Local Service read access.
 /// </summary>
-public sealed class MuteSwitch(string? userSid, string keyPath = MuteSwitch.KeyPath)
+public sealed class MuteSwitch(string? userSid, string keyPath = CameraContract.MuteKeyPath)
 {
-    public const string KeyPath = @"Software\Shybun\Camera";
-    public const string ValueName = "Mute";
-
-    /// <summary>The virtual camera attribute that names the user, by SID, whose Mute the camera follows.</summary>
-    public static readonly Guid UserAttribute = new("5d0bfc1c-3f53-4b7e-9b1e-2c47a3b8e0d4");
-
     private RegistryKey? _key;
 
     /// <summary>
@@ -34,7 +29,7 @@ public sealed class MuteSwitch(string? userSid, string keyPath = MuteSwitch.KeyP
             {
                 // Only the right the key grants Local Service: a plain open asks for full read access and is refused.
                 _key ??= Registry.Users.OpenSubKey($@"{userSid}\{keyPath}", RegistryRights.QueryValues);
-                if (_key?.GetValue(ValueName) is int mute)
+                if (_key?.GetValue(CameraContract.MuteValueName) is int mute)
                 {
                     return mute != 0;
                 }

@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 using Microsoft.Win32;
+using Shybun.Core;
 using Windows.Win32;
 using Windows.Win32.Foundation;
 
@@ -9,9 +10,8 @@ namespace Shybun.Camera;
 /// <summary>The functions Windows calls on an in-process COM server.</summary>
 public static unsafe class Exports
 {
-    public const string ClassId = "807a9636-e6fd-4ac3-b184-27c3027c1cac";
-    internal static readonly Guid Clsid = new(ClassId);
-    private const string ClassKey = @"Software\Classes\CLSID\{" + ClassId + "}";
+    internal static readonly Guid Clsid = new(CameraContract.ClassId);
+    private const string ClassKey = @"Software\Classes\CLSID\{" + CameraContract.ClassId + "}";
 
     [UnmanagedCallersOnly(EntryPoint = nameof(DllGetClassObject))]
     public static int DllGetClassObject(Guid* clsid, Guid* iid, void** ppv)

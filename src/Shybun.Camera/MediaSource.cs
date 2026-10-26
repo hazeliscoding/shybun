@@ -1,6 +1,7 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
+using Shybun.Core;
 using Windows.Win32;
 using Windows.Win32.Foundation;
 using Windows.Win32.Media.KernelStreaming;
@@ -356,7 +357,7 @@ internal sealed unsafe partial class MediaSource : IMFMediaSourceEx, IMFGetServi
     // Whoever made the virtual camera names the user it belongs to; without that, Mute can't be read.
     private static string? UserSid(IMFAttributes attributes)
     {
-        var key = MuteSwitch.UserAttribute;
+        var key = CameraContract.UserAttribute;
         PWSTR sid;
         if (attributes.GetAllocatedString(&key, &sid, out _).Failed)
         {

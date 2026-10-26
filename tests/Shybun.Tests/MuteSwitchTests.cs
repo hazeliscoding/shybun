@@ -1,6 +1,7 @@
 using System.Security.Principal;
 using Microsoft.Win32;
 using Shybun.Camera;
+using Shybun.Core;
 
 namespace Shybun.Tests;
 
@@ -26,9 +27,9 @@ public sealed class MuteSwitchTests : IDisposable
         using var key = Registry.CurrentUser.CreateSubKey(_path);
         var mute = new MuteSwitch(_sid, _path);
 
-        key.SetValue(MuteSwitch.ValueName, 0);
+        key.SetValue(CameraContract.MuteValueName, 0);
         Assert.False(mute.IsOn);
-        key.SetValue(MuteSwitch.ValueName, 1);
+        key.SetValue(CameraContract.MuteValueName, 1);
         Assert.True(mute.IsOn);
     }
 
@@ -39,7 +40,7 @@ public sealed class MuteSwitchTests : IDisposable
         Assert.True(mute.IsOn);
 
         using var key = Registry.CurrentUser.CreateSubKey(_path);
-        key.SetValue(MuteSwitch.ValueName, 0);
+        key.SetValue(CameraContract.MuteValueName, 0);
         Assert.False(mute.IsOn);
     }
 
@@ -47,7 +48,7 @@ public sealed class MuteSwitchTests : IDisposable
     public void A_value_of_the_wrong_kind_counts_as_on()
     {
         using var key = Registry.CurrentUser.CreateSubKey(_path);
-        key.SetValue(MuteSwitch.ValueName, "0");
+        key.SetValue(CameraContract.MuteValueName, "0");
         Assert.True(new MuteSwitch(_sid, _path).IsOn);
     }
 }

@@ -6,6 +6,7 @@ using System.Security.AccessControl;
 using System.Security.Principal;
 using Microsoft.Win32;
 using Shybun.Camera;
+using Shybun.Core;
 using Windows.Win32;
 using Windows.Win32.Media.MediaFoundation;
 using Windows.Win32.System.Com;
@@ -55,7 +56,7 @@ public class CameraLiveTests
     {
         PInvoke.MFStartup(PInvoke.MF_VERSION, 0).ThrowOnFailure();
         var hadKey = Registry.CurrentUser.OpenSubKey(@"Software\Shybun") is not null;
-        var before = Registry.CurrentUser.OpenSubKey(MuteSwitch.KeyPath)?.GetValue(MuteSwitch.ValueName);
+        var before = Registry.CurrentUser.OpenSubKey(CameraContract.MuteKeyPath)?.GetValue(CameraContract.MuteValueName);
         try
         {
             test();
@@ -66,17 +67,17 @@ public class CameraLiveTests
             {
                 Registry.CurrentUser.DeleteSubKeyTree(@"Software\Shybun", throwOnMissingSubKey: false);
             }
-            else if (Registry.CurrentUser.OpenSubKey(MuteSwitch.KeyPath, writable: true) is { } key)
+            else if (Registry.CurrentUser.OpenSubKey(CameraContract.MuteKeyPath, writable: true) is { } key)
             {
                 using (key)
                 {
                     if (before is null)
                     {
-                        key.DeleteValue(MuteSwitch.ValueName, throwOnMissingValue: false);
+                        key.DeleteValue(CameraContract.MuteValueName, throwOnMissingValue: false);
                     }
                     else
                     {
-                        key.SetValue(MuteSwitch.ValueName, before);
+                        key.SetValue(CameraContract.MuteValueName, before);
                     }
                 }
             }
@@ -100,13 +101,13 @@ public class CameraLiveTests
     // With Mute off the Shybun camera must look like the real one; with it on, like the camera-off image.
     private static void CheckLiveThenMuted(RegistryKey mute, Func<IMFMediaSource> open, (int Frames, double Brightness, int Width, int Height) direct)
     {
-        mute.SetValue(MuteSwitch.ValueName, 0);
+        mute.SetValue(CameraContract.MuteValueName, 0);
         var live = Within(() => Watch(open()));
         Report("Through Shybun, live", live);
         Assert.True(live.Frames >= 10, $"The Shybun camera gave {live.Frames} frames while live");
         Assert.InRange(live.Brightness, direct.Brightness * 0.7, direct.Brightness * 1.3);
 
-        mute.SetValue(MuteSwitch.ValueName, 1);
+        mute.SetValue(CameraContract.MuteValueName, 1);
         var muted = Within(() => Watch(open()));
         var cameraOff = AverageLuma(CameraOff.Frame(PInvoke.MFVideoFormat_NV12, muted.Width, muted.Height, 0)!, muted.Width * muted.Height);
         Report($"Through Shybun, muted (the camera-off image is {cameraOff:F0})", muted);
@@ -117,7 +118,7 @@ public class CameraLiveTests
     // What the Frame Server does: ask the class for an activator, hand it the real camera, and activate it.
     private static unsafe IMFMediaSource ActivateHere(IMFActivate realCamera)
     {
-        var clsid = new Guid(Exports.ClassId);
+        var clsid = new Guid(CameraContract.ClassId);
         var iid = typeof(IClassFactory).GUID;
         void* factory;
         delegate* unmanaged<Guid*, Guid*, void**, int> getClassObject = &Exports.DllGetClassObject;
@@ -129,7 +130,7 @@ public class CameraLiveTests
         PInvoke.MFCreateCollection(out var cameras).ThrowOnFailure();
         cameras.AddElement(realCamera);
         activator.SetUnknown(PInvoke.MF_VIRTUALCAMERA_ASSOCIATED_CAMERA_SOURCES, cameras);
-        activator.SetString(MuteSwitch.UserAttribute, WindowsIdentity.GetCurrent().User!.Value);
+        activator.SetString(CameraContract.UserAttribute, WindowsIdentity.GetCurrent().User!.Value);
         iid = typeof(IMFMediaSource).GUID;
         activator.ActivateObject(&iid, out var source);
         return Wrap<IMFMediaSource>(source);
@@ -158,9 +159,9 @@ public class CameraLiveTests
     // The key the tray app writes Mute to. Local Service, which the Frame Server runs as, may read it.
     private static RegistryKey MuteKey()
     {
-        var key = Registry.CurrentUser.CreateSubKey(MuteSwitch.KeyPath);
+        var key = Registry.CurrentUser.CreateSubKey(CameraContract.MuteKeyPath);
         using var permissions = Registry.CurrentUser.OpenSubKey(
-            MuteSwitch.KeyPath, RegistryKeyPermissionCheck.ReadWriteSubTree, RegistryRights.ReadPermissions | RegistryRights.ChangePermissions)!;
+            CameraContract.MuteKeyPath, RegistryKeyPermissionCheck.ReadWriteSubTree, RegistryRights.ReadPermissions | RegistryRights.ChangePermissions)!;
         var acl = permissions.GetAccessControl();
         acl.AddAccessRule(new RegistryAccessRule(
             new SecurityIdentifier(WellKnownSidType.LocalServiceSid, null), RegistryRights.QueryValues | RegistryRights.Notify, AccessControlType.Allow));
@@ -176,10 +177,10 @@ public class CameraLiveTests
             MFVirtualCameraLifetime.MFVirtualCameraLifetime_Session,
             MFVirtualCameraAccess.MFVirtualCameraAccess_CurrentUser,
             TestCameraName,
-            $"{{{Exports.ClassId}}}",
+            $"{{{CameraContract.ClassId}}}",
             default,
             out var camera).ThrowOnFailure();
-        camera.SetString(MuteSwitch.UserAttribute, WindowsIdentity.GetCurrent().User!.Value);
+        camera.SetString(CameraContract.UserAttribute, WindowsIdentity.GetCurrent().User!.Value);
         camera.AddDeviceSourceInfo(realLink);
         camera.Start(null);
         return camera;
