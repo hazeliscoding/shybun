@@ -75,7 +75,7 @@ Checked against each one's own docs on 2026-10-24.
 | Camera | a virtual camera you pick once in each app | a virtual camera you pick in each app | a virtual camera you pick in each app | each meeting app's own camera button | none |
 | Shows your state | a badge, from what Windows reports | an on-screen display while muted | a toolbar | its own app | an overlay |
 | Install | admin once, for the camera | admin, to register its camera | with PowerToys, plus a camera driver | an app, plus a browser extension for web meetings | none: a portable exe, or Scoop |
-| Status | planning | active, no license file | removed in v0.88.0, so no fixes | paid once per computer, 7-day trial | free (Unlicense), last release 2025-11-19 |
+| Status | in development, no release yet | active, no license file | removed in v0.88.0, so no fixes | paid once per computer, 7-day trial | free (Unlicense), last release 2025-11-19 |
 
 **Pick eitchtee/VCM today** if you want both halves now: it does what Shybun plans, and Shybun has no release. **Pick MuteDeck** if you'd rather your meeting app's own mute icon stays right, or don't want to pick another camera in each app; it also runs on macOS. **Pick AHK_MicMute** if you only need the mic: it's mature, with push-to-talk, profiles per app and an overlay. Windows' own Win+Alt+K mutes the mic "in supported apps", and Windows has no camera key.
 
