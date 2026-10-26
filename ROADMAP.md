@@ -53,6 +53,7 @@ Claude's calls:
 - **The camera fails closed (2026-10-26).** When Mute can't be read, the camera-off image goes out, and a format it can't draw sends nothing rather than the real frame. This gives up a working camera when the tray app's key is missing or broken.
 - **The camera-off image stands Shiori on the frame's bottom edge (2026-10-26),** at 90% of its height, centred on heather grey `#BCB8B9`, like someone sitting at a webcam. It's drawn in the stream's own format: NV12, YUY2, RGB32 or MJPG. This gives up centring her vertically.
 - **The camera collects its own garbage on every frame (2026-10-26).** The wrappers that source-generated COM makes for each frame hold one of the real camera's few buffers until they're collected, CsWin32 offers no way to release them sooner, and the camera's small heap rarely collects on its own. Without it, the webcam stalled after a few frames. This gives up a little CPU per frame in the Frame Server, against hand-written COM calls that release each frame themselves.
+- **The tray app makes one Shybun camera, per user and for the system's lifetime, around the first real camera (2026-10-26).** Apps keep it selected while Shybun isn't running, and making it needs no admin once the media source is installed. A start writes Mute only when there's none yet, since a start never changes a device. This gives up choosing which real camera it wraps (Later), and a camera that goes away when Shybun quits.
 
 ## M0: Placeholder (as soon as possible)
 
@@ -96,7 +97,7 @@ Not yet seen live: a mic plugged in or switched on while muted (Core-tested only
 
 - [x] Settle the route: can the owner's work laptop install as admin once, and which meeting apps does work use? *(owner: yes, and Teams. Build the Shybun camera, and show the camera honestly without admin; see Decisions.)*
 - [x] `Shybun.Camera`: a NativeAOT media source that passes the real camera's frames through and sends the camera-off image while muted. Start from VCamNetSample (MIT), keeping its notice in `THIRD-PARTY-NOTICES.md`.
-- [ ] Hand the mute state to the media source across processes: it runs in the Frame Server and the apps that open it, never in Shybun. *(The camera reads it; the tray app doesn't write it yet.)*
+- [x] Hand the mute state to the media source across processes: it runs in the Frame Server and the apps that open it, never in Shybun.
 - [x] Give the Shybun camera the real camera while it streams (`IMFVirtualCamera::AddDeviceSourceInfo`).
 - [ ] A one-time elevated step copies the media source to `%ProgramFiles%\Shybun` and registers it. The tray app stays unelevated, and uninstalling undoes the step.
 - [ ] Decide whether to release the real camera while muted, so its light goes off. eitchtee/VCM does, and documents webcams that fail to reopen afterwards.
@@ -107,7 +108,7 @@ Not yet seen live: a mic plugged in or switched on while muted (Core-tested only
 
 **Done when:** a frame probe reading the Shybun camera gets real frames unmuted and only camera-off frames muted; a probe that opens the real camera directly makes the badge show the camera as unconfirmed, or, without the Shybun camera installed, say Shybun can't turn it off; and Windows' Camera app, Teams, Discord and Google Meet in a browser each list the Shybun camera and show the camera-off image while muted.
 
-**The Shybun camera itself works, seen 2026-10-26.** On the owner's laptop, through the Frame Server, a test Shybun camera wrapping the built-in HD Webcam gave 85 frames in 3 s at 640x480. With Mute off its brightness matched the webcam's (122 against 129); with Mute on it matched the camera-off image's (170 against 170). Windows lists it as "Shybun camera (test) (Windows Virtual Camera)", so apps will show "Shybun camera (Windows Virtual Camera)". Still to do: the tray app creates the Shybun camera and writes Mute, the install step, the badge, and the apps in the Done when line.
+**The Shybun camera itself works, seen 2026-10-26.** On the owner's laptop, through the Frame Server, a test Shybun camera wrapping the built-in HD Webcam gave 85 frames in 3 s at 640x480. With Mute off its brightness matched the webcam's (122 against 129); with Mute on it matched the camera-off image's (170 against 170). Windows lists it as "Shybun camera (test) (Windows Virtual Camera)", so apps will show "Shybun camera (Windows Virtual Camera)". Later that day the native exe made the Shybun camera at start, and Win+Shift+Q switched it to the camera-off image with the mics, and back: the live check holds it within 30% of the webcam's brightness while live and within 6 of the camera-off image's while muted. The native exe is 18,224,128 bytes, up from 17,804,800. Still to do: the install step, the badge, and the apps in the Done when line.
 
 ## M3: 1.0
 
@@ -127,6 +128,7 @@ Not yet seen live: a mic plugged in or switched on while muted (Core-tested only
 - A camera-off image you pick.
 - Mute when the screen locks.
 - Pick your own mute key, for when another app holds Win+Shift+Q.
+- Pick which real camera the Shybun camera wraps, for laptops with a second webcam.
 - Search trademarks for Shybun: USPTO. *(owner, moved from M0 on 2026-10-26)*
 - Shiori's gone-quiet (mic) and face-hidden (camera) stickers were drawn in anime-pipeline on 2026-10-25. Their 512px exports are `docs/brand/shiori/gone-quiet.png` and `face-hidden.png`, not yet used in the README or the app. gone-quiet covers her mouth with both hands, and face-hidden covers her eyes with one eye peeking. They fit separate keys for the mic and the camera. face-hidden's peeking hand has three fingers, which can't be seen at sticker size; anime-pipeline's notes give a masked fix for it. Her walked-in sticker is specced there but not drawn, and needs a new budget.
 - Shiori as the badge. She covers her mouth while the mic is muted and hides her face while the camera is off: a mute state worth showing in a ten-second clip, the way ThatPet shows an agent's. Her gone-quiet and face-hidden stickers above are the poses. Truth still rules: each pose shows what Windows reports, and unconfirmed must look nothing like muted. There's no reaction to talking while muted, since Shybun never opens an audio stream. Extra characters to buy would reopen the decision to build Shybun free.
