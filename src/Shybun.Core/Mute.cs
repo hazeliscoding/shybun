@@ -57,17 +57,19 @@ public sealed class Mute
     /// </summary>
     public bool? Camera { get; private set; }
 
-    // Built only from readings, so a mute Shybun asked for doesn't show until it's read back,
-    // and a device it can't read never shows as muted.
-    public BadgeState Badge =>
-        Readings.Any(r => r.Muted is null) ? BadgeState.Unconfirmed
-        : !Readings.Any() ? (On ? BadgeState.Muted : BadgeState.Hidden)
-        : Readings.All(r => r.Muted == true) ? BadgeState.Muted
-        : On ? BadgeState.Live
-        : BadgeState.Hidden;
+    /// <summary>Whether Windows reports an app streaming a real camera other than through the Shybun camera.</summary>
+    public bool RealCameraInUse { get; private set; }
+
+    /// <summary>
+    /// Everything reads muted, but an app streams a real camera that Shybun can't turn off: past the Shybun camera, or
+    /// with none installed. The badge then can't confirm the camera.
+    /// </summary>
+    public bool CameraBypassed => On && RealCameraInUse && FromReadings == BadgeState.Muted;
+
+    public BadgeState Badge => CameraBypassed ? BadgeState.Unconfirmed : FromReadings;
 
     /// <summary>Which devices <see cref="Badge"/> is about: the ones it can't read, the live ones, or every muted one.</summary>
-    public BadgeDevices BadgeDevices => Badge switch
+    public BadgeDevices BadgeDevices => CameraBypassed ? BadgeDevices.Camera : FromReadings switch
     {
         BadgeState.Unconfirmed => Devices(r => r.Muted is null),
         BadgeState.Live => Devices(r => r.Muted == false),
@@ -75,16 +77,26 @@ public sealed class Mute
         _ => BadgeDevices.None,
     };
 
+    // Built only from readings, so a mute Shybun asked for doesn't show until it's read back,
+    // and a device it can't read never shows as muted.
+    private BadgeState FromReadings =>
+        Readings.Any(r => r.Muted is null) ? BadgeState.Unconfirmed
+        : !Readings.Any() ? (On ? BadgeState.Muted : BadgeState.Hidden)
+        : Readings.All(r => r.Muted == true) ? BadgeState.Muted
+        : On ? BadgeState.Live
+        : BadgeState.Hidden;
+
     private IEnumerable<(BadgeDevices Device, bool? Muted)> Readings =>
         _mics.Values.Select(muted => (BadgeDevices.Mic, muted))
             .Concat(HasCamera ? [(BadgeDevices.Camera, Camera)] : Array.Empty<(BadgeDevices, bool?)>());
 
     /// <summary>
-    /// The key toggles what the badge shows: when it shows Muted, everything unmutes; otherwise,
-    /// including a mic unmuted behind Shybun's back or one it can't read, everything mutes.
+    /// The key toggles what the readings show: when they read muted, everything unmutes; otherwise,
+    /// including a mic unmuted behind Shybun's back or one it can't read, everything mutes. An app on
+    /// the real camera is left out, since the key can't change it: the key still unmutes.
     /// </summary>
     /// <returns>The mute to set on every mic.</returns>
-    public bool Press() => On = Badge != BadgeState.Muted;
+    public bool Press() => On = FromReadings != BadgeState.Muted;
 
     /// <returns>Whether the new mic must be muted, so a headset plugged in while muted isn't live.</returns>
     public bool Added(string id, bool? muted)
@@ -101,6 +113,9 @@ public sealed class Mute
         HasCamera = true;
         Camera = off;
     }
+
+    /// <summary>Records whether an app streams a real camera other than through the Shybun camera.</summary>
+    public void ReadRealCamera(bool inUse) => RealCameraInUse = inUse;
 
     /// <summary>No Shybun camera is installed, so the badge leaves the camera out.</summary>
     public void RemoveCamera()

@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using Avalonia.Controls;
 using Avalonia.Platform;
 using Avalonia.Threading;
@@ -23,6 +24,7 @@ internal sealed class MuteController : IDisposable
     private readonly NativeMenuItem _cameraItem = new() { IsEnabled = false };
     private readonly NativeMenuItem _setupItem = new();
     private ShybunCamera _camera;
+    private IDisposable? _watch;
 
     public MuteController(TrayIcon tray)
     {
@@ -37,6 +39,7 @@ internal sealed class MuteController : IDisposable
         ReadCamera();
         _setupItem.Click += OnSetup;
         ShowSetup();
+        WatchCameras();
         _tray.Menu?.Items.Insert(0, new NativeMenuItem
         {
             Header = _key.Registered ? $"Mute key: {HotKey.Name}" : $"{HotKey.Name} is taken by another app",
@@ -52,6 +55,7 @@ internal sealed class MuteController : IDisposable
     {
         _key.Dispose();
         _mics.Dispose();
+        _watch?.Dispose();
         _camera.Dispose();
         _badge.Close();
     }
@@ -108,6 +112,28 @@ internal sealed class MuteController : IDisposable
         _setupItem.IsEnabled = true;
     }
 
+    // shortcut: if Windows' sensor activity monitor won't start, the badge can't see an app on the real camera; it
+    // exists on every Windows that .NET 10 supports, so upgrade only if that start ever fails.
+    private void WatchCameras()
+    {
+        if (!OperatingSystem.IsWindowsVersionAtLeast(10, 0, 15063))
+        {
+            return;
+        }
+
+        try
+        {
+            _watch = new CameraWatch(bypassed => Dispatcher.UIThread.Post(() =>
+            {
+                _mute.ReadRealCamera(bypassed);
+                Show();
+            }));
+        }
+        catch (COMException)
+        {
+        }
+    }
+
     // Mute as the camera reads it, which decides every frame it sends.
     // shortcut: read back only after Shybun writes Mute, its only writer, so a write by anything else shows at the
     // next press; watch the key with RegNotifyChangeKeyValue if another writer ever appears.
@@ -156,15 +182,14 @@ internal sealed class MuteController : IDisposable
     private void Show()
     {
         var state = _mute.Badge;
-        var devices = _mute.BadgeDevices;
-        _badge.Display(state, devices);
+        _badge.Display(_mute);
         _tray.Icon = state switch
         {
             BadgeState.Muted => MutedIcon,
             BadgeState.Hidden => PlainIcon,
             _ => AlertIcon,
         };
-        _tray.ToolTipText = $"Shybun: {Badge.Describe(state, devices)}";
+        _tray.ToolTipText = $"Shybun: {Badge.Describe(_mute)}";
     }
 
     private void Log(MuteCause cause)

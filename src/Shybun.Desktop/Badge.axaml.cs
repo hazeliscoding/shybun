@@ -20,8 +20,9 @@ public partial class Badge : Window
     }
 
     // "Muted" alone means the mics and the Shybun camera both: without a Shybun camera, it says which.
-    public static string Describe(BadgeState state, BadgeDevices devices) => (state, devices) switch
+    public static string Describe(Mute mute) => (mute.Badge, mute.BadgeDevices) switch
     {
+        _ when mute.CameraBypassed => mute.HasCamera ? "An app is using the webcam directly" : "Shybun can't turn the camera off",
         (BadgeState.Muted, BadgeDevices.Mic) => "Mic muted",
         (BadgeState.Muted, BadgeDevices.Camera) => "Camera off",
         (BadgeState.Muted, _) => "Muted",
@@ -34,15 +35,16 @@ public partial class Badge : Window
         _ => "Live",
     };
 
-    public void Display(BadgeState state, BadgeDevices devices)
+    public void Display(Mute mute)
     {
+        var state = mute.Badge;
         if (state == BadgeState.Hidden)
         {
             Hide();
             return;
         }
 
-        Label.Text = Describe(state, devices);
+        Label.Text = Describe(mute);
         Pill.Classes.Set("live", state == BadgeState.Live);
         Pill.Classes.Set("unconfirmed", state == BadgeState.Unconfirmed);
         if (!IsVisible)

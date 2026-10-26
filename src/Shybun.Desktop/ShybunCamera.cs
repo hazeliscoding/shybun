@@ -20,8 +20,8 @@ internal sealed class ShybunCamera : IDisposable
 {
     public const string Name = "Shybun camera";
 
-    // Windows adds this to every virtual camera's name, the Shybun camera's included.
-    private const string VirtualSuffix = " (Windows Virtual Camera)";
+    /// <summary>The name apps and Windows list it by.</summary>
+    public const string ListedName = Name + CameraUse.VirtualSuffix;
 
     private readonly Action<string> _changed;
     private bool _mfStarted;
@@ -214,7 +214,7 @@ internal sealed class ShybunCamera : IDisposable
                 var activate = ComInterfaceMarshaller<IMFActivate>.ConvertToManaged(activates[i])!;
                 Marshal.Release((nint)activates[i]);
                 var name = Text(activate, PInvoke.MF_DEVSOURCE_ATTRIBUTE_FRIENDLY_NAME) ?? "";
-                if (!name.EndsWith(VirtualSuffix, StringComparison.Ordinal))
+                if (!name.EndsWith(CameraUse.VirtualSuffix, StringComparison.Ordinal))
                 {
                     cameras.Add((name, Text(activate, PInvoke.MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE_VIDCAP_SYMBOLIC_LINK)));
                 }

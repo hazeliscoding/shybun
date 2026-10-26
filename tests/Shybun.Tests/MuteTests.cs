@@ -188,6 +188,62 @@ public class MuteTests
     }
 
     [Fact]
+    public void An_app_on_the_real_camera_while_muted_leaves_the_camera_unconfirmed()
+    {
+        var mute = Start(("a", true));
+        mute.ReadCamera(true);
+        mute.ReadRealCamera(true);
+
+        Assert.True(mute.CameraBypassed);
+        Assert.Equal(BadgeState.Unconfirmed, mute.Badge);
+        Assert.Equal(BadgeDevices.Camera, mute.BadgeDevices);
+        mute.ReadRealCamera(false);
+        Assert.Equal(BadgeState.Muted, mute.Badge);
+    }
+
+    [Fact]
+    public void Without_a_Shybun_camera_an_app_on_the_real_camera_while_muted_is_unconfirmed_too()
+    {
+        var mute = Start(("a", true));
+        mute.ReadRealCamera(true);
+
+        Assert.True(mute.CameraBypassed);
+        Assert.False(mute.HasCamera);
+        Assert.Equal(BadgeState.Unconfirmed, mute.Badge);
+    }
+
+    [Fact]
+    public void A_live_mic_stays_loud_while_an_app_is_on_the_real_camera()
+    {
+        var mute = Start(("a", true), ("b", false));
+        mute.Press();
+        mute.Read("a", true);
+        mute.ReadRealCamera(true);
+
+        Assert.False(mute.CameraBypassed);
+        Assert.Equal(BadgeState.Live, mute.Badge);
+    }
+
+    [Fact]
+    public void An_app_on_the_real_camera_is_nothing_to_say_while_live()
+    {
+        var mute = Start(("a", false));
+        mute.ReadRealCamera(true);
+
+        Assert.Equal(BadgeState.Hidden, mute.Badge);
+    }
+
+    [Fact]
+    public void The_key_still_unmutes_while_an_app_is_on_the_real_camera()
+    {
+        var mute = Start(("a", true));
+        mute.ReadCamera(true);
+        mute.ReadRealCamera(true);
+
+        Assert.False(mute.Press());
+    }
+
+    [Fact]
     public void A_log_row_holds_the_time_the_cause_and_the_counts_only()
     {
         var mute = Start(("a", true), ("b", false), ("c", null));
