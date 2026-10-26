@@ -1,0 +1,193 @@
+name: Release
+
+# A pushed v* tag builds, signs and creates a draft GitHub Release. Run it by hand to build the same
+# files unsigned, with no delta package and no release.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version to build (nothing is signed or published, and no delta package is made)
+        required: true
+        default: 0.0.1
+
+permissions:
+  contents: read
+
+jobs:
+  # The tests and the build run every package they load, so this job gets no way to sign.
+  build:
+    runs-on: windows-latest
+    env:
+      DOTNET_NOLOGO: true
+      DOTNET_CLI_TELEMETRY_OPTOUT: true
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+
+      - name: Version
+        id: version
+        shell: pwsh
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          $version = if ($env:GITHUB_REF_TYPE -eq 'tag') { $env:GITHUB_REF_NAME.TrimStart('v') } else { $env:INPUT_VERSION }
+          if ($version -notmatch '^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$') { throw "$version is not a version" }
+          "VERSION=$version" >> $env:GITHUB_ENV
+          "version=$version" >> $env:GITHUB_OUTPUT
+
+      - name: Test
+        run: dotnet test --solution Shybun.slnx --configuration Release
+
+      # Publishing the tray app publishes the Shybun camera's media source beside it.
+      - name: Publish (NativeAOT)
+        run: dotnet publish src/Shybun.Desktop --configuration Release --runtime win-x64 --output artifacts/publish -p:Version=${{ env.VERSION }}
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: publish
+          path: |
+            artifacts/publish/
+            !artifacts/publish/**/*.pdb
+          if-no-files-found: error
+
+  # The only job that can sign. It runs no build or test code: it packs and signs the built files with vpk.
+  package:
+    needs: build
+    runs-on: windows-latest
+    # Tag builds run in the release environment, whose variables let this job sign in to Azure Artifact Signing.
+    # Manual runs have no environment, so they build unsigned.
+    environment: ${{ github.ref_type == 'tag' && 'release' || '' }}
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      DOTNET_NOLOGO: true
+      DOTNET_CLI_TELEMETRY_OPTOUT: true
+      SIGN: ${{ vars.AZURE_CLIENT_ID != '' && vars.ARTIFACT_SIGNING_ENDPOINT != '' }}
+      VERSION: ${{ needs.build.outputs.version }}
+    steps:
+      # For vpk's version in dotnet-tools.json and the icon.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: publish
+          path: artifacts/publish
+
+      - name: Sign in to Azure for code signing
+        if: env.SIGN == 'true'
+        uses: azure/login@a641126d1b8aa4d1fa005f4f92df94a3a4c4c906 # v3.1.0
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Write the Artifact Signing metadata
+        if: env.SIGN == 'true'
+        shell: pwsh
+        env:
+          ENDPOINT: ${{ vars.ARTIFACT_SIGNING_ENDPOINT }}
+          ACCOUNT: ${{ vars.ARTIFACT_SIGNING_ACCOUNT }}
+          PROFILE: ${{ vars.ARTIFACT_SIGNING_PROFILE }}
+        run: |
+          [ordered]@{ Endpoint = $env:ENDPOINT; CodeSigningAccountName = $env:ACCOUNT; CertificateProfileName = $env:PROFILE } |
+            ConvertTo-Json | Out-File -Encoding utf8NoBOM "$env:RUNNER_TEMP/signing.json"
+
+      # Setup.exe and the update packages installed copies download. The previous release is fetched first
+      # so vpk can add a small delta update from it; the first release has none. The pack ID isn't "Shybun":
+      # Velopack installs to %LOCALAPPDATA%\<pack ID> and deletes it on uninstall, and Shybun's own folder
+      # there holds the mute log.
+      - name: Installer and updates
+        shell: pwsh
+        run: |
+          dotnet tool restore
+          # Only tag builds make deltas: a manual run's version may be below the latest release, which vpk refuses.
+          if ($env:GITHUB_REF_TYPE -eq 'tag') {
+            dotnet vpk download github --repoUrl https://github.com/${{ github.repository }} --token ${{ github.token }} --outputDir artifacts/velopack
+            if ($LASTEXITCODE -ne 0) { Write-Host 'No earlier Velopack release to build a delta from'; $global:LASTEXITCODE = 0 }
+          }
+          $sign = if ($env:SIGN -eq 'true') { '--azureTrustedSignFile', "$env:RUNNER_TEMP/signing.json" } else { @() }
+          # Debug symbols and the XML docs stay out of the installer.
+          dotnet vpk pack --runtime win-x64 --packId Shybun.Desktop --packVersion ${{ env.VERSION }} --packTitle Shybun --packAuthors "Hazel Granados" --packDir artifacts/publish --mainExe Shybun.exe --icon docs/brand/shybun.ico --shortcuts StartMenuRoot --noPortable --exclude '.*\.(pdb|xml)$' --outputDir artifacts/velopack @sign
+          if ($LASTEXITCODE -ne 0) { throw 'vpk pack failed' }
+
+      - name: Package
+        shell: pwsh
+        run: |
+          $out = New-Item -ItemType Directory -Force artifacts/release
+          # vpk signs its own copy of the app, not the publish folder, so the signature check reads the full package.
+          $stage = New-Item -ItemType Directory -Force artifacts/stage
+          $full = [IO.Compression.ZipFile]::OpenRead("$PWD/artifacts/velopack/Shybun.Desktop-${{ env.VERSION }}-full.nupkg")
+          foreach ($file in 'Shybun.exe', 'Shybun.Camera.dll') {
+            [IO.Compression.ZipFileExtensions]::ExtractToFile($full.GetEntry("lib/app/$file"), "$stage/$file")
+          }
+          $full.Dispose()
+          # This version's update packages and the feed. The feed also lists older versions,
+          # whose packages stay on their own releases.
+          $velopack = Get-Content artifacts/velopack/assets.win.json | ConvertFrom-Json
+          foreach ($asset in $velopack | Where-Object Type -ne 'Installer') { Copy-Item "artifacts/velopack/$($asset.RelativeFileName)" $out }
+          Copy-Item artifacts/velopack/releases.win.json $out
+          Copy-Item artifacts/velopack/Shybun.Desktop-win-Setup.exe "$out/shybun-setup-win-x64.exe"
+          $sums = Get-ChildItem "$out/*" -Include *.exe, *.nupkg | ForEach-Object {
+            "$((Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant())  $($_.Name)"
+          }
+          # LF endings, so `sha256sum -c SHA256SUMS` works on any platform.
+          [IO.File]::WriteAllText("$out/SHA256SUMS", ($sums -join "`n") + "`n")
+          Get-Content "$out/SHA256SUMS"
+
+      # The camera's media source is the file the elevated install step copies into Program Files, so it must be
+      # signed as surely as the installer.
+      - name: Check the signatures
+        if: env.SIGN == 'true'
+        shell: pwsh
+        run: |
+          $signtool = Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\bin" -Recurse -Filter signtool.exe |
+            Where-Object FullName -like '*\x64\*' | Sort-Object FullName -Descending | Select-Object -First 1
+          foreach ($file in 'artifacts/release/shybun-setup-win-x64.exe', 'artifacts/stage/Shybun.exe', 'artifacts/stage/Shybun.Camera.dll') {
+            & $signtool.FullName verify /pa /v $file
+            if ($LASTEXITCODE -ne 0) { throw "$file isn't signed" }
+          }
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release
+          path: artifacts/release/*
+          if-no-files-found: error
+
+  # The only job with write access. It runs no repository code, only the GitHub CLI.
+  release:
+    needs: package
+    if: github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: release
+          path: release
+
+      - name: Create draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ github.ref_name }}" release/* \
+            --repo "${{ github.repository }}" \
+            --draft \
+            --title "Shybun ${{ github.ref_name }}" \
+            --notes "Windows x64. Install with shybun-setup-win-x64.exe. Verify downloads against SHA256SUMS."
