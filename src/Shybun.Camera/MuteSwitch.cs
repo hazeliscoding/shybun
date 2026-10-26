@@ -1,3 +1,4 @@
+using System.Security.AccessControl;
 using Microsoft.Win32;
 
 namespace Shybun.Camera;
@@ -31,7 +32,8 @@ public sealed class MuteSwitch(string? userSid, string keyPath = MuteSwitch.KeyP
 
             try
             {
-                _key ??= Registry.Users.OpenSubKey($@"{userSid}\{keyPath}");
+                // Only the right the key grants Local Service: a plain open asks for full read access and is refused.
+                _key ??= Registry.Users.OpenSubKey($@"{userSid}\{keyPath}", RegistryRights.QueryValues);
                 if (_key?.GetValue(ValueName) is int mute)
                 {
                     return mute != 0;

@@ -327,7 +327,9 @@ internal sealed unsafe partial class MediaSource : IMFMediaSourceEx, IMFGetServi
             foreach (var stream in _streams.Where(stream => stream.Id == id))
             {
                 stream.Attach(device);
-                _events.QueueEventParamUnk(type, null, HRESULT.S_OK, stream).ThrowOnFailure();
+                // The extended type is a reference in C++, so it must point somewhere, even when it says nothing.
+                var none = Guid.Empty;
+                _events.QueueEventParamUnk(type, &none, HRESULT.S_OK, stream).ThrowOnFailure();
             }
         }
         finally

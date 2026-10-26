@@ -32,7 +32,9 @@ internal sealed unsafe partial class Activator : IMFActivate
         ppv = null;
         try
         {
-            _source ??= new MediaSource(_attributes, RealCamera());
+            // A new source each time, as Microsoft's sample does: Windows can activate the camera again after it shut
+            // the last source down.
+            _source = new MediaSource(_attributes, RealCamera());
             return Com.Pointer(_source, *riid, out ppv);
         }
         catch (Exception e)
@@ -67,8 +69,11 @@ internal sealed unsafe partial class Activator : IMFActivate
         }
 
         cameras.GetElement(0, out var element);
+        var real = (IMFActivate)element;
         iid = typeof(IMFMediaSource).GUID;
-        ((IMFActivate)element).ActivateObject(&iid, out var source).ThrowOnFailure();
+        real.ActivateObject(&iid, out var source).ThrowOnFailure();
+        // The source shuts the real camera down with itself, so the activator mustn't hand it out again.
+        real.DetachObject();
         return Com.Take<IMFMediaSource>(source);
     }
 

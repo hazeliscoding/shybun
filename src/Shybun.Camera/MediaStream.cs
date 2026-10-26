@@ -150,6 +150,10 @@ internal sealed unsafe partial class MediaStream : IMFMediaStream2
 
     private void OnDeviceEvent(IMFAsyncResult result)
     {
+        // The wrappers source-generated COM made for the last frame's event and sample each hold one of the real
+        // camera's few buffers until they're collected, and this small heap rarely collects on its own: without this
+        // the camera stops after a handful of frames. By now nothing refers to them.
+        GC.Collect();
         result.GetState(out var state);
         var device = (IMFMediaStream)state;
         HRESULT failure;
@@ -185,7 +189,8 @@ internal sealed unsafe partial class MediaStream : IMFMediaStream2
         if (failure.Failed)
         {
             PROPVARIANT empty = default;
-            _source.QueueEvent((uint)EventType.MEError, null, failure, in empty);
+            var none = Guid.Empty;
+            _source.QueueEvent((uint)EventType.MEError, &none, failure, in empty);
         }
     }
 
@@ -229,7 +234,8 @@ internal sealed unsafe partial class MediaStream : IMFMediaStream2
             real.GetSampleDuration(out var duration);
             sample.SetSampleDuration(duration);
             sample.AddBuffer(buffer);
-            _events.QueueEventParamUnk((uint)EventType.MEMediaSample, null, HRESULT.S_OK, sample).ThrowOnFailure();
+            var none = Guid.Empty;
+            _events.QueueEventParamUnk((uint)EventType.MEMediaSample, &none, HRESULT.S_OK, sample).ThrowOnFailure();
         }
         catch (Exception)
         {
