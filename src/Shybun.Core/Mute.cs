@@ -12,12 +12,21 @@ public enum BadgeState
     /// <summary>Mute is on, but a mic reads live.</summary>
     Live,
 
-    /// <summary>A mic can't be read back.</summary>
+    /// <summary>A mic or the Shybun camera can't be read back.</summary>
     Unconfirmed,
 }
 
+/// <summary>The devices a badge state is about.</summary>
+[Flags]
+public enum BadgeDevices
+{
+    None = 0,
+    Mic = 1,
+    Camera = 2,
+}
+
 /// <summary>
-/// Shybun's one on/off state, and what Windows last reported for each mic: <c>true</c> for muted,
+/// Shybun's one on/off state, and what was last read back for each mic and the Shybun camera: <c>true</c> for muted,
 /// <c>false</c> for live, and <c>null</c> when it couldn't be read.
 /// </summary>
 public sealed class Mute
@@ -39,14 +48,36 @@ public sealed class Mute
 
     public IReadOnlyDictionary<string, bool?> Mics => _mics;
 
-    // Built only from readings, so a mute Shybun asked for doesn't show until Windows confirms it,
-    // and a mic it can't read never shows as muted.
+    /// <summary>Whether a Shybun camera is installed. Without one, the badge is about the mics alone.</summary>
+    public bool HasCamera { get; private set; }
+
+    /// <summary>
+    /// The Shybun camera's Mute, read back: <c>true</c> while it sends the camera-off image. The camera reads the same
+    /// value for every frame, so this is what it sends.
+    /// </summary>
+    public bool? Camera { get; private set; }
+
+    // Built only from readings, so a mute Shybun asked for doesn't show until it's read back,
+    // and a device it can't read never shows as muted.
     public BadgeState Badge =>
-        _mics.Values.Any(muted => muted is null) ? BadgeState.Unconfirmed
-        : _mics.Count == 0 ? (On ? BadgeState.Muted : BadgeState.Hidden)
-        : _mics.Values.All(muted => muted == true) ? BadgeState.Muted
+        Readings.Any(r => r.Muted is null) ? BadgeState.Unconfirmed
+        : !Readings.Any() ? (On ? BadgeState.Muted : BadgeState.Hidden)
+        : Readings.All(r => r.Muted == true) ? BadgeState.Muted
         : On ? BadgeState.Live
         : BadgeState.Hidden;
+
+    /// <summary>Which devices <see cref="Badge"/> is about: the ones it can't read, the live ones, or every muted one.</summary>
+    public BadgeDevices BadgeDevices => Badge switch
+    {
+        BadgeState.Unconfirmed => Devices(r => r.Muted is null),
+        BadgeState.Live => Devices(r => r.Muted == false),
+        BadgeState.Muted => Devices(_ => true),
+        _ => BadgeDevices.None,
+    };
+
+    private IEnumerable<(BadgeDevices Device, bool? Muted)> Readings =>
+        _mics.Values.Select(muted => (BadgeDevices.Mic, muted))
+            .Concat(HasCamera ? [(BadgeDevices.Camera, Camera)] : Array.Empty<(BadgeDevices, bool?)>());
 
     /// <summary>
     /// The key toggles what the badge shows: when it shows Muted, everything unmutes; otherwise,
@@ -64,6 +95,20 @@ public sealed class Mute
 
     public void Removed(string id) => _mics.Remove(id);
 
+    /// <summary>Records the Shybun camera's Mute as read back, after every write.</summary>
+    public void ReadCamera(bool? off)
+    {
+        HasCamera = true;
+        Camera = off;
+    }
+
+    /// <summary>No Shybun camera is installed, so the badge leaves the camera out.</summary>
+    public void RemoveCamera()
+    {
+        HasCamera = false;
+        Camera = null;
+    }
+
     /// <summary>
     /// Records what Windows reports. A mic unmuted behind Shybun's back shows as live, and is
     /// never muted again until the key is pressed: the unmute may have been on purpose.
@@ -75,4 +120,7 @@ public sealed class Mute
             _mics[id] = muted;
         }
     }
+
+    private BadgeDevices Devices(Func<(BadgeDevices Device, bool? Muted), bool> match) =>
+        Readings.Where(match).Aggregate(BadgeDevices.None, (all, r) => all | r.Device);
 }

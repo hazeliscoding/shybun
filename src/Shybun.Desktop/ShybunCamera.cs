@@ -95,6 +95,23 @@ internal sealed class ShybunCamera : IDisposable
         }
     }
 
+    /// <summary>
+    /// Mute as the camera reads it: <c>true</c> for the camera-off image, <c>false</c> for the picture, and <c>null</c>
+    /// when there's no value to read, which the camera treats as the camera-off image.
+    /// </summary>
+    public static bool? ReadMute()
+    {
+        try
+        {
+            using var key = Registry.CurrentUser.OpenSubKey(CameraContract.MuteKeyPath);
+            return key?.GetValue(CameraContract.MuteValueName) is int mute ? mute != 0 : null;
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or SecurityException)
+        {
+            return null;
+        }
+    }
+
     public void Dispose()
     {
         if (_mfStarted)

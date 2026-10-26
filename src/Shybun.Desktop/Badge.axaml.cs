@@ -8,7 +8,7 @@ using Windows.Win32.UI.WindowsAndMessaging;
 namespace Shybun.Desktop;
 
 /// <summary>
-/// The badge: what Windows reports for the mics, on top of everything in the primary screen's top
+/// The badge: what was read back for the mics and the Shybun camera, on top of everything in the primary screen's top
 /// right corner. It never takes focus, and clicks pass through it to whatever is underneath.
 /// </summary>
 public partial class Badge : Window
@@ -19,7 +19,22 @@ public partial class Badge : Window
         Resized += (_, _) => PlaceTopRight();
     }
 
-    public void Display(BadgeState state)
+    // "Muted" alone means the mics and the Shybun camera both: without a Shybun camera, it says which.
+    public static string Describe(BadgeState state, BadgeDevices devices) => (state, devices) switch
+    {
+        (BadgeState.Muted, BadgeDevices.Mic) => "Mic muted",
+        (BadgeState.Muted, BadgeDevices.Camera) => "Camera off",
+        (BadgeState.Muted, _) => "Muted",
+        (BadgeState.Live, BadgeDevices.Mic) => "Mic is live",
+        (BadgeState.Live, BadgeDevices.Camera) => "Camera is live",
+        (BadgeState.Live, _) => "Mic and camera are live",
+        (BadgeState.Unconfirmed, BadgeDevices.Mic) => "Can't confirm the mic",
+        (BadgeState.Unconfirmed, BadgeDevices.Camera) => "Can't confirm the camera",
+        (BadgeState.Unconfirmed, _) => "Can't confirm the mic or camera",
+        _ => "Live",
+    };
+
+    public void Display(BadgeState state, BadgeDevices devices)
     {
         if (state == BadgeState.Hidden)
         {
@@ -27,12 +42,7 @@ public partial class Badge : Window
             return;
         }
 
-        Label.Text = state switch
-        {
-            BadgeState.Muted => "Muted",
-            BadgeState.Live => "Mic is live",
-            _ => "Can't confirm the mic",
-        };
+        Label.Text = Describe(state, devices);
         Pill.Classes.Set("live", state == BadgeState.Live);
         Pill.Classes.Set("unconfirmed", state == BadgeState.Unconfirmed);
         if (!IsVisible)

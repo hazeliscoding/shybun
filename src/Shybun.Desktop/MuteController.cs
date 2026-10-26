@@ -34,6 +34,7 @@ internal sealed class MuteController : IDisposable
         _mics.Changed += OnChanged;
         _key = new HotKey(Press);
         _camera = StartCamera();
+        ReadCamera();
         _setupItem.Click += OnSetup;
         ShowSetup();
         _tray.Menu?.Items.Insert(0, new NativeMenuItem
@@ -68,6 +69,7 @@ internal sealed class MuteController : IDisposable
             _cameraItem.Header = "Shybun couldn't reach the Shybun camera";
         }
 
+        ReadCamera();
         Log(MuteCause.Key);
         Show();
     }
@@ -100,8 +102,25 @@ internal sealed class MuteController : IDisposable
         await CameraSetup.RunElevated(installed ? CameraSetup.UninstallArgument : CameraSetup.InstallArgument);
         _camera.Dispose();
         _camera = StartCamera();
+        ReadCamera();
         ShowSetup();
+        Show();
         _setupItem.IsEnabled = true;
+    }
+
+    // Mute as the camera reads it, which decides every frame it sends.
+    // shortcut: read back only after Shybun writes Mute, its only writer, so a write by anything else shows at the
+    // next press; watch the key with RegNotifyChangeKeyValue if another writer ever appears.
+    private void ReadCamera()
+    {
+        if (CameraSetup.Installed)
+        {
+            _mute.ReadCamera(ShybunCamera.ReadMute());
+        }
+        else
+        {
+            _mute.RemoveCamera();
+        }
     }
 
     private void OnAdded(string id, bool? muted)
@@ -137,20 +156,15 @@ internal sealed class MuteController : IDisposable
     private void Show()
     {
         var state = _mute.Badge;
-        _badge.Display(state);
+        var devices = _mute.BadgeDevices;
+        _badge.Display(state, devices);
         _tray.Icon = state switch
         {
             BadgeState.Muted => MutedIcon,
             BadgeState.Hidden => PlainIcon,
             _ => AlertIcon,
         };
-        _tray.ToolTipText = state switch
-        {
-            BadgeState.Muted => "Shybun: muted",
-            BadgeState.Live => "Shybun: a mic is live",
-            BadgeState.Unconfirmed => "Shybun: can't confirm a mic",
-            _ => "Shybun: live",
-        };
+        _tray.ToolTipText = $"Shybun: {Badge.Describe(state, devices)}";
     }
 
     private void Log(MuteCause cause)

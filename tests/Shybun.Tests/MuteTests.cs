@@ -134,6 +134,60 @@ public class MuteTests
     }
 
     [Fact]
+    public void Muted_covers_the_Shybun_camera_only_once_it_reads_off()
+    {
+        var mute = Start(("a", true));
+        mute.ReadCamera(false);
+
+        Assert.Equal(BadgeState.Live, mute.Badge);
+        Assert.Equal(BadgeDevices.Camera, mute.BadgeDevices);
+        mute.ReadCamera(true);
+        Assert.Equal(BadgeState.Muted, mute.Badge);
+        Assert.Equal(BadgeDevices.Mic | BadgeDevices.Camera, mute.BadgeDevices);
+    }
+
+    [Fact]
+    public void A_Shybun_camera_that_cant_be_read_is_unconfirmed_never_muted()
+    {
+        var mute = Start(("a", true));
+        mute.ReadCamera(null);
+
+        Assert.Equal(BadgeState.Unconfirmed, mute.Badge);
+        Assert.Equal(BadgeDevices.Camera, mute.BadgeDevices);
+    }
+
+    [Fact]
+    public void Without_a_Shybun_camera_the_badge_is_about_the_mics_alone()
+    {
+        var mute = Start(("a", true));
+        mute.ReadCamera(false);
+        mute.RemoveCamera();
+
+        Assert.Equal(BadgeState.Muted, mute.Badge);
+        Assert.Equal(BadgeDevices.Mic, mute.BadgeDevices);
+    }
+
+    [Fact]
+    public void The_badge_never_says_muted_while_the_mics_are_live_and_only_the_camera_is_off()
+    {
+        var mute = Start(("a", false));
+        mute.ReadCamera(true);
+
+        Assert.Equal(BadgeState.Hidden, mute.Badge);
+    }
+
+    [Fact]
+    public void The_key_mutes_when_only_the_camera_is_live_and_unmutes_when_both_read_muted()
+    {
+        var mute = Start(("a", true));
+        mute.ReadCamera(false);
+
+        Assert.True(mute.Press());
+        mute.ReadCamera(true);
+        Assert.False(mute.Press());
+    }
+
+    [Fact]
     public void A_log_row_holds_the_time_the_cause_and_the_counts_only()
     {
         var mute = Start(("a", true), ("b", false), ("c", null));
