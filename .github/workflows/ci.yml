@@ -42,7 +42,9 @@ jobs:
 
       # Trim and AOT warnings only appear at publish, so they fail the build here.
       - name: Publish
-        run: dotnet publish src/Shybun.Desktop --configuration Release --runtime win-x64 -warnaserror
+        run: |
+          dotnet publish src/Shybun.Desktop --configuration Release --runtime win-x64 -warnaserror
+          dotnet publish src/Shybun.Camera --configuration Release --runtime win-x64 -warnaserror
 
       # gitleaks is pinned and checked against its release checksum. --full-history HEAD scans this branch's
       # history only; by default it scans every ref, so one branch's leak would fail every run.

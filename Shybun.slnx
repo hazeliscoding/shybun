@@ -1,5 +1,6 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="src/Shybun.Camera/Shybun.Camera.csproj" />
     <Project Path="src/Shybun.Core/Shybun.Core.csproj" />
     <Project Path="src/Shybun.Desktop/Shybun.Desktop.csproj" />
   </Folder>

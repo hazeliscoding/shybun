@@ -1,0 +1,20 @@
+{
+  "$schema": "https://aka.ms/CsWin32.schema.json",
+  "comInterop": {
+    "preserveSigMethods": [
+      "IClassFactory",
+      "IKsControl",
+      "IMFActivate",
+      "IMFAsyncCallback",
+      "IMFAttributes",
+      "IMFGetService",
+      "IMFMediaEventGenerator",
+      "IMFMediaEventQueue",
+      "IMFMediaSource",
+      "IMFMediaSourceEx",
+      "IMFMediaStream",
+      "IMFMediaStream2",
+      "IMFSampleAllocatorControl"
+    ]
+  }
+}

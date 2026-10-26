@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Shybun.Camera</RootNamespace>
+    <!-- Published as a native DLL: Windows loads it into the Frame Server and every app that opens the Shybun camera. -->
+    <PublishAot>true</PublishAot>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <CsWin32RunAsBuildTask>true</CsWin32RunAsBuildTask>
+    <DisableRuntimeMarshalling>true</DisableRuntimeMarshalling>
+    <!-- Windows loads this DLL only through a virtual camera, which needs Windows 11, so every API it calls exists. -->
+    <NoWarn>$(NoWarn);CA1416</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Windows.CsWin32" PrivateAssets="all" />
+  </ItemGroup>
+
+</Project>
