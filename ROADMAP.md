@@ -52,6 +52,7 @@ Claude's calls:
 - **Mute reaches the camera through the registry (2026-10-26).** The tray app writes `Mute` to `HKCU\Software\Shybun\Camera` and lets Local Service, which the Frame Server runs as, read it; the virtual camera tells the media source whose key that is. The media source reads it for every frame and writes nothing. This gives up hearing back from the camera: the badge item settles how the camera confirms, since a write-back would widen the camera's "does nothing else".
 - **The camera fails closed (2026-10-26).** When Mute can't be read, the camera-off image goes out, and a format it can't draw sends nothing rather than the real frame. This gives up a working camera when the tray app's key is missing or broken.
 - **The camera-off image stands Shiori on the frame's bottom edge (2026-10-26),** at 90% of its height, centred on heather grey `#BCB8B9`, like someone sitting at a webcam. It's drawn in the stream's own format: NV12, YUY2, RGB32 or MJPG. This gives up centring her vertically.
+- **The camera collects its own garbage on every frame (2026-10-26).** The wrappers that source-generated COM makes for each frame hold one of the real camera's few buffers until they're collected, CsWin32 offers no way to release them sooner, and the camera's small heap rarely collects on its own. Without it, the webcam stalled after a few frames. This gives up a little CPU per frame in the Frame Server, against hand-written COM calls that release each frame themselves.
 
 ## M0: Placeholder (as soon as possible)
 
@@ -94,19 +95,19 @@ Not yet seen live: a mic plugged in or switched on while muted (Core-tested only
 ## M2: Camera
 
 - [x] Settle the route: can the owner's work laptop install as admin once, and which meeting apps does work use? *(owner: yes, and Teams. Build the Shybun camera, and show the camera honestly without admin; see Decisions.)*
-- [ ] `Shybun.Camera`: a NativeAOT media source that passes the real camera's frames through and sends the camera-off image while muted. Start from VCamNetSample (MIT), keeping its notice in `THIRD-PARTY-NOTICES.md`.
-- [ ] Hand the mute state to the media source across processes: it runs in the Frame Server and the apps that open it, never in Shybun.
-- [ ] Give the Shybun camera the real camera while it streams (`IMFVirtualCamera::AddDeviceSourceInfo`).
+- [x] `Shybun.Camera`: a NativeAOT media source that passes the real camera's frames through and sends the camera-off image while muted. Start from VCamNetSample (MIT), keeping its notice in `THIRD-PARTY-NOTICES.md`.
+- [ ] Hand the mute state to the media source across processes: it runs in the Frame Server and the apps that open it, never in Shybun. *(The camera reads it; the tray app doesn't write it yet.)*
+- [x] Give the Shybun camera the real camera while it streams (`IMFVirtualCamera::AddDeviceSourceInfo`).
 - [ ] A one-time elevated step copies the media source to `%ProgramFiles%\Shybun` and registers it. The tray app stays unelevated, and uninstalling undoes the step.
 - [ ] Decide whether to release the real camera while muted, so its light goes off. eitchtee/VCM does, and documents webcams that fail to reopen afterwards.
 - [ ] Warn when an app holds the real camera instead of the Shybun camera. Check first whether the per-app `LastUsedTimeStart` and `LastUsedTimeStop` values under `ConsentStore\webcam` show that.
 - [ ] Without the Shybun camera installed, the badge shows when an app has the real camera on and says Shybun can't turn it off. The key leaves the camera alone.
 - [ ] The badge shows the camera.
-- [ ] The camera-off image: Shiori's hidden-and-quiet sticker, waist-up and centred on a flat heather-grey 16:9 frame, composed in Shybun from `docs/brand/shiori/hidden-and-quiet.png`.
+- [x] The camera-off image: Shiori's hidden-and-quiet sticker, waist-up and centred on a flat heather-grey 16:9 frame, composed in Shybun from `docs/brand/shiori/hidden-and-quiet.png`.
 
 **Done when:** a frame probe reading the Shybun camera gets real frames unmuted and only camera-off frames muted; a probe that opens the real camera directly makes the badge show the camera as unconfirmed, or, without the Shybun camera installed, say Shybun can't turn it off; and Windows' Camera app, Teams, Discord and Google Meet in a browser each list the Shybun camera and show the camera-off image while muted.
 
-**Built 2026-10-26, not yet run on the webcam.** `Shybun.Camera` wraps the real camera, reads Mute and sends the camera-off image while it's on. Unit tests cover the image and the Mute switch, and CI publishes the DLL with no AOT warnings. `CameraLiveTests` waits for the owner to approve the install's UAC prompt. The tray app doesn't create the Shybun camera or write Mute yet.
+**The Shybun camera itself works, seen 2026-10-26.** On the owner's laptop, through the Frame Server, a test Shybun camera wrapping the built-in HD Webcam gave 85 frames in 3 s at 640x480. With Mute off its brightness matched the webcam's (122 against 129); with Mute on it matched the camera-off image's (170 against 170). Windows lists it as "Shybun camera (test) (Windows Virtual Camera)", so apps will show "Shybun camera (Windows Virtual Camera)". Still to do: the tray app creates the Shybun camera and writes Mute, the install step, the badge, and the apps in the Done when line.
 
 ## M3: 1.0
 
