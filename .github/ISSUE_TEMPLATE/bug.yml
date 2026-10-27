@@ -1,0 +1,46 @@
+name: Bug
+description: Shybun did something wrong, such as a badge that disagreed with a device, a mute that didn't hold, or a camera an app couldn't use.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        If the badge said "Muted" while a mic or the camera was live, say so first: that's the bug Shybun exists to prevent. Remove anything private before you post, such as user names and folder paths.
+  - type: textarea
+    id: happened
+    attributes:
+      label: What happened
+      description: What the badge said, and what the mic or camera actually did.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: How to make it happen again
+      placeholder: |
+        1. ...
+        2. ...
+  - type: input
+    id: apps
+    attributes:
+      label: Meeting apps involved
+      placeholder: Teams, Google Meet in Edge
+  - type: textarea
+    id: log
+    attributes:
+      label: Lines from the mute log, if a mute went wrong
+      description: From %LOCALAPPDATA%\Shybun\mute-log.csv. It holds times and mute states only, never sound or pictures.
+      render: text
+  - type: input
+    id: versions
+    attributes:
+      label: Shybun and Windows versions
+      placeholder: Shybun 0.9.0, Windows 11 25H2
+    validations:
+      required: true
