@@ -1,6 +1,7 @@
 # Normalize to LF everywhere.
 * text=auto eol=lf
 
+*.gif binary
 *.png binary
 *.ico binary
 *.zip binary
