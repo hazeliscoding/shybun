@@ -29,6 +29,7 @@ The owner's:
 - **The badge confirms the Shybun camera by reading Mute back (2026-10-26).** The camera reads Mute for every frame and fails closed, so the value Shybun reads back after each write is what the camera sends, and the camera still writes nothing. This gives up proof from the frames themselves: a broken or outdated media source wouldn't show on the badge.
 - **The webcam's light stays on while muted, for now (2026-10-26).** The Shybun camera keeps the real camera streaming and swaps in the camera-off image. Turning the light off would mean drawing frames with no webcam behind them, and eitchtee/VCM documents webcams that fail to reopen. This gives up the light as proof the camera is off: the badge is the proof. Releasing the webcam moves to Later.
 - **A release's new Shybun camera waits for a click in the tray (2026-10-26).** When an update brings a media source that differs from the one in Program Files, the tray menu offers "Update the Shybun camera..." beside Remove, with one UAC prompt. The installed camera keeps working until then, since it shares only `CameraContract` with the tray app, and those values never change. Updates never raise a prompt on their own. This gives up a camera that updates itself: someone who never clicks keeps the old one.
+- **One comment on PowerToys #38604 once 1.0 is on winget (2026-10-27).** It's the main thread asking for Video Conference Mute's key back, with 75 reactions. The comment says Shybun is the owner's own project, gives the winget command, and sends questions to Shybun's issues, since a commenter asked in May to keep that thread for feedback to PowerToys. No other thread gets one. This narrows "no outreach" and gives up a quiet launch; the owner approves the comment's text before it's posted.
 - **The first release is v0.9.0, then v1.0.0 (2026-10-26).** 0.9.0 is the first signed build, and an installed 0.9.0 taking 1.0.0 through its own update check proves the update path on real releases. winget starts at 1.0.0. This gives up calling the first public build 1.0.
 
 Claude's calls:
@@ -133,6 +134,8 @@ Not yet seen live: the badge without the Shybun camera installed (Core-tested on
 - [ ] Sign releases with Artifact Signing through OIDC, from a `release` environment that only `v*` tags can deploy to, as in Staypaw. *(Set up 2026-10-26: a federated credential for the `release` environment, with the signer role on one certificate profile and no client secret. The first signed build is the first tag.)*
 - [ ] Scan the published exe and the media source with Microsoft Defender.
 - [ ] Submit a winget manifest.
+- [x] Issue templates, `CONTRIBUTING.md` and `SECURITY.md`, so strangers can report bugs, and private vulnerability reporting on. *(2026-10-27, from the OSS launch gates; the bug template asks what the badge said against what the device did.)*
+- [ ] Once 1.0 is on winget, the one comment on PowerToys #38604 (see Decisions).
 - [x] A screenshot and a short demo in the README. *(2026-10-26: two GIFs, recorded on the owner's laptop with the webcam covered, show the key switching Discord's and Google Meet's previews of the Shybun camera to Shiori. The Discord one shows the badge too and doubles as the screenshot. The screen recorder didn't capture the badge over the browser, though the owner saw it there.)*
 
 **Done when:** `winget install hazeliscoding.Shybun` installs a signed build that starts in the tray, turning the camera on installs the Shybun camera, and an installed release updates itself to a later test release with no Shybun process left behind.
@@ -161,4 +164,4 @@ Not yet seen live: the badge without the Shybun camera installed (Core-tested on
 ## How we'll know it works
 
 - The owner's dogfooding at work: the mute log counts mutes where the badge and a device disagreed. It must stay at zero.
-- Public signals after release: issues, downloads and winget installs. No interviews or outreach.
+- Public signals after release: issues, downloads and winget installs. No interviews, and no outreach beyond the one comment on PowerToys #38604.

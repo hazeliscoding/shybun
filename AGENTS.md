@@ -74,7 +74,7 @@ One meaning per term. Use these words in code, docs and commits.
 - **Checks:** automate acceptance checks instead of handing manual steps to the owner. Give every check that tests for an absence a positive control. For example, the network guard must fail on a deliberate `HttpClient`.
 - **Structural rules get tests.** When a decision is a rule about the code's shape, add a test that fails when it's broken.
 - **Real devices:** explicit tests that open the mic or the camera run only when the owner isn't on a call, and never save what they read.
-- **Validation:** evidence comes from dogfooding and public signals (issues, downloads). Don't plan interviews, recruiting or outreach.
+- **Validation:** evidence comes from dogfooding and public signals (issues, downloads). Don't plan interviews, recruiting or outreach; the one exception is the comment on PowerToys #38604 in `ROADMAP.md`.
 - **Docs:** short and concise. Prefer editing `ROADMAP.md` over creating new planning documents.
 - **Code comments:** explain why, not what. Comment only what the code can't say for itself: a non-obvious constraint, a Win32 or Media Foundation quirk and its cause, or a line that keeps the trust contract. Don't restate names or types, and don't leave commented-out code.
 - Local Playwright output goes to `.playwright-mcp/`, which git ignores.
