@@ -11,15 +11,19 @@ internal static class Program
     [STAThread]
     public static int Main(string[] args)
     {
+        // The elevated step comes before Velopack, which may apply a downloaded update as it starts: never with admin.
+        switch (args)
+        {
+            case [CameraSetup.InstallArgument]:
+                return CameraSetup.Install();
+            case [CameraSetup.UninstallArgument]:
+                return CameraSetup.Uninstall();
+        }
+
         // Setup and the uninstaller start an installed copy with their own arguments; Velopack handles those and
         // exits. A copy that isn't installed carries on.
         VelopackApp.Build().Run();
-        return args switch
-        {
-            [CameraSetup.InstallArgument] => CameraSetup.Install(),
-            [CameraSetup.UninstallArgument] => CameraSetup.Uninstall(),
-            _ => BuildAvaloniaApp().StartWithClassicDesktopLifetime(args, ShutdownMode.OnExplicitShutdown),
-        };
+        return BuildAvaloniaApp().StartWithClassicDesktopLifetime(args, ShutdownMode.OnExplicitShutdown);
     }
 
     public static AppBuilder BuildAvaloniaApp() =>

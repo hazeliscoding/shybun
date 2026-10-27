@@ -28,6 +28,21 @@ public class GuardrailTests
         Assert.Empty(References(Camera, "System.Net"));
     }
 
+    // Velopack may apply a downloaded update as it starts, which must never happen with admin rights.
+    [Fact]
+    public void The_elevated_camera_step_runs_before_Velopack_starts()
+    {
+        var folder = new DirectoryInfo(AppContext.BaseDirectory);
+        while (!File.Exists(Path.Combine(folder.FullName, "Shybun.slnx")))
+        {
+            folder = folder.Parent!;
+        }
+
+        var main = File.ReadAllText(Path.Combine(folder.FullName, "src", "Shybun.Desktop", "Program.cs"));
+        Assert.True(main.IndexOf("CameraSetup.Install()", StringComparison.Ordinal) is > 0 and var step
+            && step < main.IndexOf("VelopackApp.Build()", StringComparison.Ordinal));
+    }
+
     // Positive controls: the same checks find what they exist to catch.
     [Fact]
     public void The_check_finds_Avalonia_in_the_tray_app() => Assert.NotEmpty(References(Desktop, "Avalonia"));
