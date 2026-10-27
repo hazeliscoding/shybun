@@ -133,7 +133,7 @@ Not yet seen live: the badge without the Shybun camera installed (Core-tested on
 - [ ] Sign releases with Artifact Signing through OIDC, from a `release` environment that only `v*` tags can deploy to, as in Staypaw. *(Set up 2026-10-26: a federated credential for the `release` environment, with the signer role on one certificate profile and no client secret. The first signed build is the first tag.)*
 - [ ] Scan the published exe and the media source with Microsoft Defender.
 - [ ] Submit a winget manifest.
-- [ ] A screenshot and a short demo in the README.
+- [x] A screenshot and a short demo in the README. *(2026-10-26: two GIFs, recorded on the owner's laptop with the webcam covered, show the key switching Discord's and Google Meet's previews of the Shybun camera to Shiori. The Discord one shows the badge too and doubles as the screenshot. The screen recorder didn't capture the badge over the browser, though the owner saw it there.)*
 
 **Done when:** `winget install hazeliscoding.Shybun` installs a signed build that starts in the tray, turning the camera on installs the Shybun camera, and an installed release updates itself to a later test release with no Shybun process left behind.
 
