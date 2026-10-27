@@ -28,6 +28,7 @@ Shybun sits between people and their mic and camera. They run it only if they ca
 - `Shybun.Core` holds the mute state and its rules. It never references Avalonia or any Win32 interop; a test will enforce it. Rules take device events and the time as inputs, so tests run without real devices.
 - Win32 and COM calls go through CsWin32 (`NativeMethods.txt`), not hand-written `DllImport`. The generated code is typed and NativeAOT-safe.
 - NativeAOT must stay free of warnings: no reflection-based serialization. Use source generators.
+- `CameraContract`'s values never change. A Shybun camera installed by an older release keeps running after the tray app updates, until the owner clicks "Update the Shybun camera...", and it reads those values. A test pins them.
 
 ## Brand
 
