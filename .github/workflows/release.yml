@@ -104,8 +104,12 @@ jobs:
           ENDPOINT: ${{ vars.ARTIFACT_SIGNING_ENDPOINT }}
           ACCOUNT: ${{ vars.ARTIFACT_SIGNING_ACCOUNT }}
           PROFILE: ${{ vars.ARTIFACT_SIGNING_PROFILE }}
+        # Only the Azure CLI login above may sign. The signing client otherwise tries other credentials first, and
+        # one the runner offers got the service's 403 Forbidden.
         run: |
-          [ordered]@{ Endpoint = $env:ENDPOINT; CodeSigningAccountName = $env:ACCOUNT; CertificateProfileName = $env:PROFILE } |
+          $others = 'EnvironmentCredential', 'WorkloadIdentityCredential', 'ManagedIdentityCredential', 'SharedTokenCacheCredential',
+            'VisualStudioCredential', 'VisualStudioCodeCredential', 'AzurePowerShellCredential', 'AzureDeveloperCliCredential', 'InteractiveBrowserCredential'
+          [ordered]@{ Endpoint = $env:ENDPOINT; CodeSigningAccountName = $env:ACCOUNT; CertificateProfileName = $env:PROFILE; ExcludeCredentials = $others } |
             ConvertTo-Json | Out-File -Encoding utf8NoBOM "$env:RUNNER_TEMP/signing.json"
 
       # Setup.exe and the update packages installed copies download. The previous release is fetched first
