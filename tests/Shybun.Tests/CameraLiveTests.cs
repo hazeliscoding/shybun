@@ -11,6 +11,7 @@ using Shybun.Camera;
 using Shybun.Core;
 using Shybun.Desktop;
 using Windows.Win32;
+using Windows.Win32.Media.Audio;
 using Windows.Win32.Media.MediaFoundation;
 using Windows.Win32.System.Com;
 using Windows.Win32.UI.Accessibility;
@@ -198,6 +199,63 @@ public class CameraLiveTests
             LiveTests.Unmute(mics);
         }
     });
+
+    // A downloaded update waits until Windows' privacy settings show no app using a mic or a camera. This opens the
+    // webcam, then a mic, and each must show while open and stop showing after. It reads no sound, so close every app
+    // using a mic or a camera first; typing is fine.
+    [Fact(Explicit = true)]
+    public void Windows_shows_an_app_using_the_webcam_or_a_mic_only_while_it_does() => Run(() =>
+    {
+        Assert.False(Updates.DevicesInUse(), "Close every app using a mic or a camera first.");
+
+        var streaming = Task.Run(() => Watch(Open(RealCamera().Link)));
+        Thread.Sleep(1500);
+        Assert.True(Updates.DevicesInUse(), "Windows didn't show the webcam in use.");
+        Assert.True(streaming.Wait(TimeSpan.FromSeconds(20)), "The camera step didn't finish within 20 s.");
+        Assert.True(Eventually(() => !Updates.DevicesInUse()), "Windows still showed the webcam in use after it closed.");
+
+        Capture(LiveTests.Mics()[0].Device, () =>
+        {
+            Thread.Sleep(1500);
+            Assert.True(Updates.DevicesInUse(), "Windows didn't show the mic in use.");
+        });
+        Assert.True(Eventually(() => !Updates.DevicesInUse()), "Windows still showed the mic in use after it closed.");
+    });
+
+    // Starts the mic in shared mode and reads nothing from it.
+    private static unsafe void Capture(IMMDevice device, Action during)
+    {
+        device.Activate(typeof(IAudioClient).GUID, CLSCTX.CLSCTX_ALL, null, out var activated);
+        var client = (IAudioClient)activated;
+        client.GetMixFormat(out var format);
+        try
+        {
+            client.Initialize(AUDCLNT_SHAREMODE.AUDCLNT_SHAREMODE_SHARED, 0, 10_000_000, 0, *format);
+            client.Start();
+            during();
+            client.Stop();
+        }
+        finally
+        {
+            Marshal.FreeCoTaskMem((nint)format);
+        }
+    }
+
+    // Windows may record the stop only once the device's last COM object is released, which the collector does.
+    private static bool Eventually(Func<bool> check)
+    {
+        for (var clock = Stopwatch.StartNew(); clock.Elapsed < TimeSpan.FromSeconds(5); Thread.Sleep(250))
+        {
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            if (check())
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
 
     // Everything the badge said while a camera streamed, sampled every 200 ms once the stream had a second to start.
     private static List<string?> SaysWhileStreaming(string link)
