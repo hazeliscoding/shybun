@@ -57,6 +57,21 @@ public static class CameraSetup
         }
     }
 
+    /// <summary>
+    /// Uninstalling Shybun undoes the install step: the Shybun camera leaves the camera lists, then the elevated step
+    /// removes its media source. Velopack ends this hook after 30 seconds, so the camera goes first, needing no
+    /// prompt, and the hook waits 25 seconds for the UAC prompt.
+    /// </summary>
+    public static void RemoveOnUninstall()
+    {
+        ShybunCamera.RemoveListed();
+        if (Installed)
+        {
+            // Run, not called: starting an elevated process blocks until the prompt is answered.
+            Task.Run(() => RunElevated(UninstallArgument)).Wait(TimeSpan.FromSeconds(25));
+        }
+    }
+
     // shortcut: whoever can write Shybun's folder picks the DLL installed here. Today they could swap Shybun.exe too,
     // so a check would add nothing; once releases are signed (M3), check the copy's signature against the exe's own.
     /// <summary>The elevated install: copies the media source shipped beside Shybun.exe, and registers it.</summary>

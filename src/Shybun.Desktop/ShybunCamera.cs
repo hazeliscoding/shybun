@@ -95,6 +95,28 @@ internal sealed class ShybunCamera : IDisposable
         }
     }
 
+    /// <summary>Takes the Shybun camera out of every app's camera list when no tray app holds it, as Shybun uninstalls.</summary>
+    public static void RemoveListed()
+    {
+        if (!OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22000) || PInvoke.MFStartup(PInvoke.MF_VERSION, 0).Failed)
+        {
+            return;
+        }
+
+        try
+        {
+            Open().Remove();
+        }
+        catch (COMException)
+        {
+            // There was none to remove.
+        }
+        finally
+        {
+            PInvoke.MFShutdown();
+        }
+    }
+
     /// <summary>
     /// Mute as the camera reads it: <c>true</c> for the camera-off image, <c>false</c> for the picture, and <c>null</c>
     /// when there's no value to read, which the camera treats as the camera-off image.

@@ -22,7 +22,9 @@ internal static class Program
 
         // Setup and the uninstaller start an installed copy with their own arguments; Velopack handles those and
         // exits. A copy that isn't installed carries on.
-        VelopackApp.Build().Run();
+        VelopackApp.Build()
+            .OnBeforeUninstallFastCallback(_ => CameraSetup.RemoveOnUninstall())
+            .Run();
         return BuildAvaloniaApp().StartWithClassicDesktopLifetime(args, ShutdownMode.OnExplicitShutdown);
     }
 
