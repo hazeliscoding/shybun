@@ -30,4 +30,11 @@ SetWindowLong
 UnregisterHotKey
 VIRTUAL_KEY
 WINDOW_EX_STYLE
+WINTRUST_ACTION_GENERIC_VERIFY_V2
+WINTRUST_DATA
+WINTRUST_FILE_INFO
+WinVerifyTrust
 WM_HOTKEY
+WTHelperGetProvCertFromChain
+WTHelperGetProvSignerFromChain
+WTHelperProvDataFromStateData

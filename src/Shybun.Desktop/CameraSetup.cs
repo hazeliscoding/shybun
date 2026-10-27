@@ -1,9 +1,12 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Security;
+using System.Security.Cryptography.X509Certificates;
 using Microsoft.Win32;
 using Shybun.Core;
 using Windows.Win32;
+using Windows.Win32.Foundation;
+using Windows.Win32.Security.WinTrust;
 using Windows.Win32.Storage.FileSystem;
 
 namespace Shybun.Desktop;
@@ -72,21 +75,34 @@ public static class CameraSetup
         }
     }
 
-    // shortcut: whoever can write Shybun's folder picks the DLL installed here. Today they could swap Shybun.exe too,
-    // so a check would add nothing; once releases are signed (M3), check the copy's signature against the exe's own.
     /// <summary>The elevated install: copies the media source shipped beside Shybun.exe, and registers it.</summary>
-    public static int Install() => Install(Path.Combine(AppContext.BaseDirectory, FileName), Folder, Registry.LocalMachine);
+    public static int Install() =>
+        Install(Path.Combine(AppContext.BaseDirectory, FileName), Folder, Registry.LocalMachine, Environment.ProcessPath!);
 
     /// <summary>The elevated uninstall. The tray app takes the Shybun camera out of the camera lists first.</summary>
     public static int Uninstall() => Uninstall(Folder, Registry.LocalMachine);
 
-    /// <summary>Registers under <paramref name="machine"/>: HKEY_LOCAL_MACHINE, or a scratch key in tests.</summary>
-    public static int Install(string source, string folder, RegistryKey machine) => Exit(() =>
+    /// <summary>
+    /// Registers under <paramref name="machine"/>: HKEY_LOCAL_MACHINE, or a scratch key in tests. When
+    /// <paramref name="publisher"/>, Shybun.exe, is signed, the media source must be signed by the same publisher:
+    /// anyone who can write Shybun's folder could otherwise swap in a DLL that the camera's services then load.
+    /// </summary>
+    public static int Install(string source, string folder, RegistryKey machine, string publisher) => Exit(() =>
     {
         var dll = Path.Combine(folder, FileName);
         Directory.CreateDirectory(folder);
         Retire(dll);
         File.Copy(source, dll);
+        // The copy is checked, in a folder only an admin can change, so the file checked is the file registered. An
+        // unsigned Shybun.exe is a build from source, and its UAC prompt already says the publisher is unknown.
+        // shortcut: the exe is read by its path, which anyone who can write Shybun's folder could rename and replace
+        // while the prompt is up; build the expected publisher into a signed release if that race ever matters.
+        if (Signer(publisher) is { } expected && Signer(dll) != expected)
+        {
+            File.Delete(dll);
+            throw new SecurityException("The Shybun camera's media source isn't signed by Shybun's publisher.");
+        }
+
         using var key = machine.CreateSubKey(ServerKeyPath);
         key.SetValue(null, dll);
         key.SetValue("ThreadingModel", "Both");
@@ -113,6 +129,46 @@ public static class CameraSetup
             Directory.Delete(folder);
         }
     });
+
+    // The subject of the certificate that signed this file, when the file's own signature is valid; otherwise null.
+    // Windows checks it from its local cache, with no revocation lookup, so the check never touches the network.
+    private static unsafe string? Signer(string path)
+    {
+        fixed (char* file = path)
+        {
+            var info = new WINTRUST_FILE_INFO { cbStruct = (uint)sizeof(WINTRUST_FILE_INFO), pcwszFilePath = file };
+            var data = new WINTRUST_DATA
+            {
+                cbStruct = (uint)sizeof(WINTRUST_DATA),
+                dwUIChoice = WINTRUST_DATA_UICHOICE.WTD_UI_NONE,
+                fdwRevocationChecks = WINTRUST_DATA_REVOCATION_CHECKS.WTD_REVOKE_NONE,
+                dwUnionChoice = WINTRUST_DATA_UNION_CHOICE.WTD_CHOICE_FILE,
+                dwProvFlags = WINTRUST_DATA_PROVIDER_FLAGS.WTD_CACHE_ONLY_URL_RETRIEVAL | WINTRUST_DATA_PROVIDER_FLAGS.WTD_REVOCATION_CHECK_NONE,
+            };
+            data.Anonymous.pFile = &info;
+            data.dwStateAction = WINTRUST_DATA_STATE_ACTION.WTD_STATEACTION_VERIFY;
+            var action = PInvoke.WINTRUST_ACTION_GENERIC_VERIFY_V2;
+            try
+            {
+                if (PInvoke.WinVerifyTrust(HWND.Null, &action, &data) != 0)
+                {
+                    return null;
+                }
+
+                // The certificate from the signature just checked.
+                var provider = PInvoke.WTHelperProvDataFromStateData(data.hWVTStateData);
+                var signer = PInvoke.WTHelperGetProvSignerFromChain(provider, 0, false, 0);
+                var certificate = PInvoke.WTHelperGetProvCertFromChain(signer, 0);
+                using var x509 = new X509Certificate2((nint)certificate->pCert);
+                return x509.Subject;
+            }
+            finally
+            {
+                data.dwStateAction = WINTRUST_DATA_STATE_ACTION.WTD_STATEACTION_CLOSE;
+                PInvoke.WinVerifyTrust(HWND.Null, &action, &data);
+            }
+        }
+    }
 
     // A loaded DLL can't be deleted or overwritten, but it can be renamed. Shybun and the Frame Server keep the media
     // source loaded until they exit, since a NativeAOT runtime can't unload, so it's renamed aside and deleted at the
