@@ -109,9 +109,9 @@ internal sealed class MuteController : IDisposable
     }
 
     private async void OnUpdate(object? sender, EventArgs e) =>
-        await Setup("Updating the Shybun camera", CameraSetup.InstallArgument, removeFirst: false);
+        await Setup("Updating the Shybun camera", CameraSetup.InstallArgument, removeFirst: false, restartCamera: false);
 
-    private async Task Setup(string doing, string argument, bool removeFirst)
+    private async Task Setup(string doing, string argument, bool removeFirst, bool restartCamera = true)
     {
         _setupItem.IsEnabled = _updateItem.IsEnabled = false;
         _cameraItem.Header = doing;
@@ -122,8 +122,18 @@ internal sealed class MuteController : IDisposable
         }
 
         await CameraSetup.RunElevated(argument);
-        _camera.Dispose();
-        _camera = StartCamera();
+        if (restartCamera)
+        {
+            _camera.Dispose();
+            _camera = StartCamera();
+        }
+        else
+        {
+            // An update only replaces the media source's file, so the camera stays, and the one this process started
+            // can't be started again beside itself.
+            _cameraItem.Header = _camera.Status;
+        }
+
         ReadCamera();
         ShowSetup();
         Show();
