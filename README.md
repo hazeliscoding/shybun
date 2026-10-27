@@ -13,6 +13,16 @@ Windows has no camera key, and its own mic key (Win+Alt+K) works only in apps th
 
 > **Status:** in development. The mic half, the Shybun camera, installed from the tray menu, and the badge for both work when built from source; a release comes next. See [ROADMAP.md](ROADMAP.md). Until Shybun ships, use one of the tools under [Alternatives](#alternatives).
 
+## See it
+
+Press Win+Shift+Q, here with Discord's camera preview on the Shybun camera and the webcam covered. The preview turns into Shiori, and the badge in the top right says "Muted". Press it again and both go back.
+
+<img src="docs/demo/discord.gif" width="720" alt="Discord's Voice and Video settings, with Shybun camera (Windows Virtual Camera) picked and a dark preview from a covered webcam. After a key press, the preview shows Shiori covering her eyes and mouth on a grey frame, and a small badge reading Muted appears in the screen's top right corner. A second press brings back the dark preview and hides the badge.">
+
+The same key in Google Meet: the preview turns into Shiori, and Meet notices the mic muted in Windows.
+
+<img src="docs/demo/meet.gif" width="640" alt="Google Meet's join screen previewing the Shybun camera from a covered webcam. After a key press, the preview shows Shiori, and Meet then pops up Microphone muted by system over her. A second press brings back the dark preview, and the popup goes.">
+
 ## Before and after
 
 | You're… | Without Shybun | With Shybun |
