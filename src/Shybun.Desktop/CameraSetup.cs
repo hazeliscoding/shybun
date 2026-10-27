@@ -42,6 +42,26 @@ public static class CameraSetup
         }
     }
 
+    /// <summary>
+    /// Whether an update brought a media source that differs from the installed one. Compared by content, since every
+    /// build from source carries the same version.
+    /// </summary>
+    public static bool Outdated => Installed && Differ(Path.Combine(Folder, FileName), Path.Combine(AppContext.BaseDirectory, FileName));
+
+    /// <summary>Whether both files exist and their contents differ.</summary>
+    public static bool Differ(string installed, string shipped)
+    {
+        try
+        {
+            return File.Exists(installed) && File.Exists(shipped)
+                && !File.ReadAllBytes(installed).AsSpan().SequenceEqual(File.ReadAllBytes(shipped));
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            return false;
+        }
+    }
+
     /// <summary>Runs this Shybun again, elevated, with one UAC prompt. False if the prompt was declined or the step failed.</summary>
     public static Task<bool> RunElevated(string argument) => RunElevated(Environment.ProcessPath!, argument);
 

@@ -113,14 +113,34 @@ public sealed class CameraSetupTests : IDisposable
         Assert.Null(_machine.OpenSubKey(ServerKeyPath));
     }
 
+    [Fact]
+    public void An_update_offers_the_camera_only_when_its_media_source_differs()
+    {
+        Directory.CreateDirectory(_folder);
+        var installed = Path.Combine(_folder, "installed.dll");
+        var shipped = Path.Combine(_folder, "shipped.dll");
+        File.Copy(Source, installed);
+        File.Copy(Source, shipped);
+
+        Assert.False(CameraSetup.Differ(installed, shipped));
+        File.WriteAllBytes(shipped, Changed(File.ReadAllBytes(Source)));
+        Assert.True(CameraSetup.Differ(installed, shipped));
+        Assert.False(CameraSetup.Differ(Path.Combine(_folder, "missing.dll"), shipped));
+        Assert.False(CameraSetup.Differ(installed, Path.Combine(_folder, "missing.dll")));
+    }
+
+    private static byte[] Changed(byte[] bytes)
+    {
+        bytes[bytes.Length / 2] ^= 0xFF;
+        return bytes;
+    }
+
     // A copy with one byte flipped in the middle, so its signature no longer matches.
     private string Changed(string signed)
     {
-        var bytes = File.ReadAllBytes(signed);
-        bytes[bytes.Length / 2] ^= 0xFF;
         Directory.CreateDirectory(_folder);
         var changed = Path.Combine(_folder, "changed.dll");
-        File.WriteAllBytes(changed, bytes);
+        File.WriteAllBytes(changed, Changed(File.ReadAllBytes(signed)));
         return changed;
     }
 }

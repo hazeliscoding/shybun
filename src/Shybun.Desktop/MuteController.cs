@@ -23,6 +23,7 @@ internal sealed class MuteController : IDisposable
     private readonly HotKey _key;
     private readonly NativeMenuItem _cameraItem = new() { IsEnabled = false };
     private readonly NativeMenuItem _setupItem = new();
+    private readonly NativeMenuItem _updateItem = new() { Header = "Update the Shybun camera..." };
     private ShybunCamera _camera;
     private IDisposable? _watch;
 
@@ -38,6 +39,7 @@ internal sealed class MuteController : IDisposable
         _camera = StartCamera();
         ReadCamera();
         _setupItem.Click += OnSetup;
+        _updateItem.Click += OnUpdate;
         ShowSetup();
         WatchCameras();
         _tray.Menu?.Items.Insert(0, new NativeMenuItem
@@ -47,7 +49,8 @@ internal sealed class MuteController : IDisposable
         });
         _tray.Menu?.Items.Insert(1, _cameraItem);
         _tray.Menu?.Items.Insert(2, _setupItem);
-        _tray.Menu?.Items.Insert(3, new NativeMenuItemSeparator());
+        _tray.Menu?.Items.Insert(3, _updateItem);
+        _tray.Menu?.Items.Insert(4, new NativeMenuItemSeparator());
         Show();
     }
 
@@ -87,29 +90,44 @@ internal sealed class MuteController : IDisposable
 
     private void ShowSetup()
     {
-        _setupItem.IsVisible = OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22000);
+        var supported = OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22000);
+        _setupItem.IsVisible = supported;
         _setupItem.Header = CameraSetup.Installed ? "Remove the Shybun camera..." : "Install the Shybun camera...";
+        // An update brought a new media source. The installed one keeps working until this replaces it, so the update
+        // waits for a click and never raises a prompt on its own.
+        _updateItem.IsVisible = supported && CameraSetup.Outdated;
     }
 
     // async void: a menu click has nothing to hand a task back to.
     private async void OnSetup(object? sender, EventArgs e)
     {
-        _setupItem.IsEnabled = false;
         var installed = CameraSetup.Installed;
-        _cameraItem.Header = installed ? "Removing the Shybun camera" : "Installing the Shybun camera";
-        if (installed)
+        await Setup(
+            installed ? "Removing the Shybun camera" : "Installing the Shybun camera",
+            installed ? CameraSetup.UninstallArgument : CameraSetup.InstallArgument,
+            removeFirst: installed);
+    }
+
+    private async void OnUpdate(object? sender, EventArgs e) =>
+        await Setup("Updating the Shybun camera", CameraSetup.InstallArgument, removeFirst: false);
+
+    private async Task Setup(string doing, string argument, bool removeFirst)
+    {
+        _setupItem.IsEnabled = _updateItem.IsEnabled = false;
+        _cameraItem.Header = doing;
+        if (removeFirst)
         {
             // Out of the camera lists before its media source goes. If the prompt is declined, it's made again below.
             await Task.Run(_camera.Remove);
         }
 
-        await CameraSetup.RunElevated(installed ? CameraSetup.UninstallArgument : CameraSetup.InstallArgument);
+        await CameraSetup.RunElevated(argument);
         _camera.Dispose();
         _camera = StartCamera();
         ReadCamera();
         ShowSetup();
         Show();
-        _setupItem.IsEnabled = true;
+        _setupItem.IsEnabled = _updateItem.IsEnabled = true;
     }
 
     // shortcut: if Windows' sensor activity monitor won't start, the badge can't see an app on the real camera; it
