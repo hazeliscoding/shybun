@@ -126,6 +126,17 @@ jobs:
           dotnet vpk pack --runtime win-x64 --packId Shybun.Desktop --packVersion ${{ env.VERSION }} --packTitle Shybun --packAuthors "Hazel Granados" --packDir artifacts/publish --mainExe Shybun.exe --icon docs/brand/shybun.ico --shortcuts StartMenuRoot --noPortable --exclude '.*\.(pdb|xml)$' --outputDir artifacts/velopack @sign
           if ($LASTEXITCODE -ne 0) { throw 'vpk pack failed' }
 
+      # A 403 from Artifact Signing means it refused the identity it was shown, so this names that identity: the
+      # signing token's audience, app and object IDs, never the token.
+      - name: Show the signing identity
+        if: failure() && env.SIGN == 'true'
+        shell: pwsh
+        run: |
+          $payload = (az account get-access-token --resource https://codesigning.azure.net --query accessToken -o tsv).Split('.')[1].Replace('-', '+').Replace('_', '/')
+          $payload += '=' * ((4 - $payload.Length % 4) % 4)
+          [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($payload)) | ConvertFrom-Json |
+            Select-Object aud, appid, oid, idtyp | Format-List
+
       - name: Package
         shell: pwsh
         run: |
